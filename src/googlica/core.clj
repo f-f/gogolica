@@ -58,7 +58,7 @@
 (defn replace-path-vars [path-template]
   path-template)
 
-(defn generate-request [method]
+(defn generate-request [base-url method]
   {:method (-> method :httpMethod s/lower-case keyword)
    :url (str base-url (replace-path-vars (:path method)))}) 
 
@@ -67,4 +67,6 @@
   `(defn ~(generate-function-name method)
      ~(generate-docs method)
      ~(generate-args method)
-     (http/request ~(generate-request base-url method)))) 
+     (http/request ~(generate-request base-url method))))
+
+(generate-function-from-method base-url storage-object-get)

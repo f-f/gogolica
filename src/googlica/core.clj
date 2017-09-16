@@ -53,14 +53,47 @@
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))]
     `[~@required {:keys ~optional}])) 
 
+(defn template->path-vector
+  ;;  "/b/{fooBar}/c/{bar} => ["/b/" foo-bar "/c/" bar ]"
+  [path-template arg-names]
+  (loop [result []
+         vars arg-names
+         template path-template]
+    (println {:result result})
+    (println {:vars vars})
+    (println {:template template})    
+    (if-let [var (first vars)]
+      (let [placeholder-re (re-pattern (str "\\{" var "\\}"))
+            value-symbol (symbol (->kebab-case var))
+            [pre post] (s/split template placeholder-re)]
+        (recur
+         ;; result
+         (concat
+          result
+          [pre value-symbol])
+         ;; vars
+         (rest vars)
+         ;; template
+         post
+         ))
+      result)))
+
 ;; > (replace-path-vars "b/{bucket}/o/{object}")
 ;; => (str "b/" bucket "/o/" object)
-(defn replace-path-vars [path-template]
-  path-template)
+(defn generate-path [method]
+  (let [path-vector (template->path-vector
+                     (:path method)
+                     (->> method
+                          :parameters
+                          (filter (fn [[k v]](= "path" (:location v))))
+                          keys
+                          (map name)))]
+    `(str ~@path-vector)))
+
 
 (defn generate-request [base-url method]
   {:method (-> method :httpMethod s/lower-case keyword)
-   :url (str base-url (replace-path-vars (:path method)))}) 
+   :url (str base-url (generate-path method))}) 
 
 (defn generate-function-from-method
   [base-url method]

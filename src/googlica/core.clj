@@ -53,32 +53,28 @@
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))]
     `[~@required {:keys ~optional}])) 
 
+;; > ( template->path-vector "b/{fooBar}/o/{bar}" ["fooBar" "bar"])
+;; => ["/b/" foo-bar "/c/" bar ]
 (defn template->path-vector
-  ;;  "/b/{fooBar}/c/{bar} => ["/b/" foo-bar "/c/" bar ]"
   [path-template arg-names]
-  (loop [result []
-         vars arg-names
-         template path-template]
-    (println {:result result})
-    (println {:vars vars})
-    (println {:template template})    
-    (if-let [var (first vars)]
-      (let [placeholder-re (re-pattern (str "\\{" var "\\}"))
-            value-symbol (symbol (->kebab-case var))
-            [pre post] (s/split template placeholder-re)]
-        (recur
-         ;; result
-         (concat
-          result
-          [pre value-symbol])
-         ;; vars
-         (rest vars)
-         ;; template
-         post
-         ))
-      result)))
+  (let [args->symbols (->> arg-names
+                           (mapv #(hash-map % (->kebab-case-symbol %)))
+                           (apply merge))]
+    (->> path-template
+         ;; Returns a list of vectors, where the first element is the match including
+         ;; the curly brackets, and the second element is without.
+         (re-seq #"\{(.+?)\}")
+         ;; Here we iterate on the template string, matching on the first pair of
+         ;; curly braces and adding the match to the result vector
+         (reduce (fn [[result template] [match arg]]
+                   (let [[pre post] (s/split template
+                                             (re-pattern (str "\\{" arg "\\}")))]
+                     [(concat result [pre (get args->symbols arg)])
+                      post]))
+                 [[] path-template])
+         first)))
 
-;; > (replace-path-vars "b/{bucket}/o/{object}")
+  ;; > (replace-path-vars "b/{bucket}/o/{object}")
 ;; => (str "b/" bucket "/o/" object)
 (defn generate-path [method]
   (let [path-vector (template->path-vector
@@ -102,4 +98,3 @@
      ~(generate-args method)
      (http/request ~(generate-request base-url method))))
 
-(generate-function-from-method base-url storage-object-get)

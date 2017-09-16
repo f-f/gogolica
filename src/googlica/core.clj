@@ -27,12 +27,12 @@
 
 (def storage-object-get (-> storage-model :resources :objects :methods :get)) 
 
-(defn get-required-params
-  "Returns a map with only the required params"
+(defn split-required-params
+  "Returns a vector of two maps: first with the required params, second with the optional"
   [method]
   (->> (:parameters method)
-       (filter (fn [[k v]] (:required v)))
-       (into {})))
+       ((juxt filter remove) (fn [[k v]] (:required v)))
+       (mapv #(into {} %)))) 
 
 (defn generate-function-name
   "Generates a symbol in the form of 'verb-resource', from a method map."
@@ -46,7 +46,10 @@
        "\n")) ;; TODO: add description for parameters
 
 (defn generate-args [method]
-  '[arg1]) 
+  (let [[required optional] (->> method
+                                 split-required-params
+                                 (mapv (comp (partial mapv ->kebab-case-symbol) keys)))]
+    `[~@required {:keys ~optional}])) 
 
 (defn generate-request [method]
   {:method "get"

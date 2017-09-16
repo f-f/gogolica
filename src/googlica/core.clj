@@ -27,6 +27,8 @@
 
 (def storage-object-get (-> storage-model :resources :objects :methods :get)) 
 
+(def base-url (-> storage-model :baseUrl)) 
+
 (defn split-required-params
   "Returns a vector of two maps: first with the required params, second with the optional"
   [method]
@@ -51,13 +53,18 @@
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))]
     `[~@required {:keys ~optional}])) 
 
+;; > (replace-path-vars "b/{bucket}/o/{object}")
+;; => (str "b/" bucket "/o/" object)
+(defn replace-path-vars [path-template]
+  path-template)
+
 (defn generate-request [method]
-  {:method "get"
-   :url "whatever"}) 
+  {:method (-> method :httpMethod s/lower-case keyword)
+   :url (str base-url (replace-path-vars (:path method)))}) 
 
 (defn generate-function-from-method
-  [method]
+  [base-url method]
   `(defn ~(generate-function-name method)
      ~(generate-docs method)
      ~(generate-args method)
-     (http/request ~(generate-request method)))) 
+     (http/request ~(generate-request base-url method)))) 

@@ -74,22 +74,19 @@
                  [[] path-template])
          first)))
 
-  ;; > (replace-path-vars "b/{bucket}/o/{object}")
+;; > (replace-path-vars "b/{bucket}/o/{object}")
 ;; => (str "b/" bucket "/o/" object)
 (defn generate-path [method]
-  (let [path-vector (template->path-vector
-                     (:path method)
-                     (->> method
-                          :parameters
-                          (filter (fn [[k v]](= "path" (:location v))))
-                          keys
-                          (map name)))]
-    `(str ~@path-vector)))
-
+  (template->path-vector (:path method)
+                         (->> method
+                              :parameters
+                              (filter (fn [[k v]](= "path" (:location v))))
+                              keys
+                              (map name))))
 
 (defn generate-request [base-url method]
   {:method (-> method :httpMethod s/lower-case keyword)
-   :url (str base-url (generate-path method))}) 
+   :url `(str ~base-url ~@(generate-path method))}) 
 
 (defn generate-function-from-method
   [base-url method]

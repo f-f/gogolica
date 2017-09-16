@@ -4,7 +4,8 @@
             [clojure.string :as s]
             [clojure.set :as st]
             [me.raynes.fs :as fs]
-            [clj-http.client :as http]))
+            [clj-http.client :as http]
+            [camel-snake-kebab.core :refer :all]))
 
 (defn -main
   "I don't do a whole lot ... yet."
@@ -33,11 +34,16 @@
        (filter (fn [[k v]] (:required v)))
        (into {})))
 
-(defn generate-method-name [method]
-  'get) 
+(defn generate-function-name
+  "Generates a symbol in the form of 'verb-resource', from a method map."
+  [method]
+  (let [[_ resource-name method-name] (s/split (:id method) #"\.")]
+    (-> (str method-name "-" resource-name)
+        ->kebab-case-symbol))) 
 
 (defn generate-docs [method]
-  "Some docs") 
+  (str (:description method)
+       "\n")) ;; TODO: add description for parameters
 
 (defn generate-args [method]
   '[arg1]) 
@@ -48,7 +54,7 @@
 
 (defn generate-function-from-method
   [method]
-  `(defn ~(generate-method-name method)
+  `(defn ~(generate-function-name method)
      ~(generate-docs method)
      ~(generate-args method)
      (http/request ~(generate-request method)))) 

@@ -28,7 +28,18 @@
 
 (def storage-object-get (-> storage-model :resources :objects :methods :get)) 
 
-(def base-url (-> storage-model :baseUrl)) 
+(def base-url (-> storage-model :baseUrl))
+
+;;(generate-ns-sexp (:name storage-model) (:version storage-model) (:description storage-model) (:documentationLink storage-model))
+(defn generate-ns-sexp
+  "Generates the ns declaration for an API.
+  Takes name, version, description and docs link, all strings."
+  [name version desc docs-link]
+  `(ns
+    ~(symbol (str "googlica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
+    ~(str desc "\n\nDocumentation link: " docs-link)
+    (:gen-class)
+    (:require [clj-http.client :as http])))
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params, second with the optional"

@@ -5,6 +5,7 @@
             [clojure.set :as st]
             [me.raynes.fs :as fs]
             [clj-http.client :as http]
+            [fipp.clojure :as f]
             [camel-snake-kebab.core :refer :all]))
 
 (defn -main
@@ -93,8 +94,9 @@
 
 (defn generate-function-from-method
   [base-url method]
-  `(defn ~(generate-function-name method)
-     ~(generate-docs method)
-     ~(generate-args method)
-     (http/request ~(generate-request base-url method))))
-
+  (-> `(defn ~(generate-function-name method)
+         ~(generate-docs method)
+         ~(generate-args method)
+         (http/request ~(generate-request base-url method)))
+      (f/pprint {:width 100}))) ;; This pretty prints the generated code in an idiomatic way
+      ;(with-out-str))) ;; TODO: uncomment this line to return formatted code as a string

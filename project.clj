@@ -7,6 +7,7 @@
                  [cheshire "5.8.0"]
                  [me.raynes/fs "1.4.6"]
                  [clj-http "3.7.0"]
+                 [fipp "0.6.10"]
                  [camel-snake-kebab "0.4.0"]]
   :main ^:skip-aot googlica.core
   :target-path "target/%s"

@@ -59,20 +59,23 @@
   [path-template arg-names]
   (let [args->symbols (->> arg-names
                            (mapv #(hash-map % (->kebab-case-symbol %)))
-                           (apply merge))]
-    (->> path-template
-         ;; Returns a list of vectors, where the first element is the match including
-         ;; the curly brackets, and the second element is without.
-         (re-seq #"\{(.+?)\}")
-         ;; Here we iterate on the template string, matching on the first pair of
-         ;; curly braces and adding the match to the result vector
-         (reduce (fn [[result template] [match arg]]
-                   (let [[pre post] (s/split template
-                                             (re-pattern (str "\\{" arg "\\}")))]
-                     [(concat result [pre (get args->symbols arg)])
-                      post]))
-                 [[] path-template])
-         first)))
+                           (apply merge))
+        ;; Returns a list of vectors, where the first element is the match including
+        ;; the curly brackets, and the second element is without.
+        matches (re-seq #"\{(.+?)\}" path-template)
+        ;; Helper function in which we iterate on the template string,
+        ;; matching on the first pair of curly braces and adding the
+        ;; match to the accumulator vector, recurring on more matches
+        template->path-vector'
+        (fn [result-acc template matches]
+          (if-some [[match arg] (first matches)]
+            (let [[pre post] (s/split template
+                                      (re-pattern (str "\\{" arg "\\}")))]
+              (recur (concat result-acc [pre (get args->symbols arg)])
+                     post
+                     (rest matches)))
+            result-acc))]
+    (template->path-vector' [] path-template matches)))
 
 ;; > (replace-path-vars "b/{bucket}/o/{object}")
 ;; => (str "b/" bucket "/o/" object)

@@ -8,11 +8,6 @@
             [fipp.clojure :as f]
             [camel-snake-kebab.core :refer :all]))
 
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
-
 (def model-paths
   (->> (fs/find-files "model" #".*\.json")
        (mapv #(.getPath %))))
@@ -28,8 +23,6 @@
 
 (def storage-object-get (-> storage-model :resources :objects :methods :get))
 
-(def base-url (-> storage-model :baseUrl))
-
 (defn generate-ns-sexp
   "Generates the ns declaration for an API.
   Takes name, version, description and docs link, all strings."
@@ -41,21 +34,21 @@
     (:require [clj-http.client :as http])))
 
 (defn generate-global-vars
-  "Generates global variables that are used throughout the namespace"
+  "Generates global variables that are used throughout the generated namespace"
   [root-url service-path]
   `[(def base-url ~(str root-url service-path))])
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params, second with the optional"
-  [method]
-  (->> (:parameters method)
+  [parameters]
+  (->> parameters
        ((juxt filter remove) (fn [[k v]] (:required v)))
        (mapv #(into {} %))))
 
 (defn generate-function-name
-  "Generates a symbol in the form of 'verb-resource', from a method map."
-  [method]
-  (let [[_ resource-name method-name] (str/split (:id method) #"\.")]
+  "Generates a symbol in the form of 'verb-resource', from a method id."
+  [id]
+  (let [[_ resource-name method-name] (str/split id #"\.")]
     (-> (str method-name "-" resource-name)
         ->kebab-case-symbol)))
 
@@ -63,14 +56,13 @@
   (str (:description method)
        "\n")) ;; TODO: add description for parameters
 
-(defn generate-args [method]
-  (let [[required optional] (->> method
+(defn generate-args
+  [parameters]
+  (let [[required optional] (->> parameters
                                  split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))]
     `[~@required {:keys ~optional}]))
 
-;; > ( template->path-vector "b/{fooBar}/o/{bar}" ["fooBar" "bar"])
-;; => ["/b/" foo-bar "/c/" bar ]
 (defn template->path-vector
   [path-template arg-names]
   (let [args->symbols (->> arg-names
@@ -93,29 +85,27 @@
             result-acc))]
     (template->path-vector' [] path-template matches)))
 
-;; > (replace-path-vars "b/{bucket}/o/{object}")
-;; => (str "b/" bucket "/o/" object)
-(defn generate-path [method]
-  (template->path-vector (:path method)
-                         (->> method
-                              :parameters
+(defn generate-path
+  [template-uri parameters]
+  (template->path-vector template-uri
+                         (->> parameters
                               (filter (fn [[k v]](= "path" (:location v))))
                               keys
-                              (map name))))
+                              (mapv name))))
 
 (defn generate-request
   "Generates the request map to be passed to the http library.
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
-  [method]
-  {:method (-> method :httpMethod str/lower-case keyword)
-   :url `(str base-url ~@(generate-path method))})
+  [http-method path parameters]
+  {:method (-> http-method str/lower-case keyword)
+   :url `(str base-url ~@(generate-path path parameters))})
 
 (defn generate-function-from-method
-  [method]
-  `(defn ~(generate-function-name method)
+  [{:keys [id httpMethod parameters path] :as method}]
+  `(defn ~(generate-function-name id)
      ~(generate-docs method)
-     ~(generate-args method)
-     (http/request ~(generate-request method))))
+     ~(generate-args parameters)
+     (http/request ~(generate-request httpMethod path parameters))))
 
 (defn generate-ns-file
   "Given a service model, generates a clojure namespace with the implementation

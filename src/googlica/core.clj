@@ -1,8 +1,8 @@
 (ns googlica.core
   (:gen-class)
   (:require [cheshire.core :as json]
-            [clojure.string :as s]
-            [clojure.set :as st]
+            [clojure.string :as str]
+            [clojure.set :as set]
             [me.raynes.fs :as fs]
             [clj-http.client :as http]
             [fipp.clojure :as f]
@@ -30,7 +30,6 @@
 
 (def base-url (-> storage-model :baseUrl))
 
-;;(generate-ns-sexp (:name storage-model) (:version storage-model) (:description storage-model) (:documentationLink storage-model))
 (defn generate-ns-sexp
   "Generates the ns declaration for an API.
   Takes name, version, description and docs link, all strings."
@@ -40,6 +39,11 @@
     ~(str desc "\n\nDocumentation link: " docs-link)
     (:gen-class)
     (:require [clj-http.client :as http])))
+
+(defn generate-global-vars
+  "Generates global variables that are used throughout the namespace"
+  [root-url service-path]
+  `[(def base-url ~(str root-url service-path))])
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params, second with the optional"
@@ -51,7 +55,7 @@
 (defn generate-function-name
   "Generates a symbol in the form of 'verb-resource', from a method map."
   [method]
-  (let [[_ resource-name method-name] (s/split (:id method) #"\.")]
+  (let [[_ resource-name method-name] (str/split (:id method) #"\.")]
     (-> (str method-name "-" resource-name)
         ->kebab-case-symbol)))
 
@@ -81,7 +85,7 @@
         template->path-vector'
         (fn [result-acc template matches]
           (if-some [[match arg] (first matches)]
-            (let [[pre post] (s/split template
+            (let [[pre post] (str/split template
                                       (re-pattern (str "\\{" arg "\\}")))]
               (recur (concat result-acc [pre (get args->symbols arg)])
                      post
@@ -99,15 +103,30 @@
                               keys
                               (map name))))
 
-(defn generate-request [base-url method]
-  {:method (-> method :httpMethod s/lower-case keyword)
-   :url `(str ~base-url ~@(generate-path method))})
+(defn generate-request
+  "Generates the request map to be passed to the http library.
+  NB: uses the `base-url` symbol, it should be generated in the ns including the method."
+  [method]
+  {:method (-> method :httpMethod str/lower-case keyword)
+   :url `(str base-url ~@(generate-path method))})
 
 (defn generate-function-from-method
-  [base-url method]
-  (-> `(defn ~(generate-function-name method)
-         ~(generate-docs method)
-         ~(generate-args method)
-         (http/request ~(generate-request base-url method)))
-      (f/pprint {:width 100}))) ;; This pretty prints the generated code in an idiomatic way
-      ;(with-out-str))) ;; TODO: uncomment this line to return formatted code as a string
+  [method]
+  `(defn ~(generate-function-name method)
+     ~(generate-docs method)
+     ~(generate-args method)
+     (http/request ~(generate-request method))))
+
+(defn generate-ns-file
+  "Given a service model, generates a clojure namespace with the implementation
+  of all the API methods as functions, and writes it to file."
+  [{:keys [name version description documentationLink rootUrl servicePath] :as model}]
+  (let [symbols->str #(-> %
+                          (f/pprint {:width 100}) ;; Fipp pretty prints clojure code nicely
+                          with-out-str)]
+    (->> [[(generate-ns-sexp name version description documentationLink)]
+          (generate-global-vars rootUrl servicePath)]
+          ;;(mapv generate-function-from-method ;; TODO get all the methods)])))
+         (apply concat) ;; <- this is for flattening the methods
+         (mapv symbols->str)
+         (str/join "\n\n"))))

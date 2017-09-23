@@ -22,6 +22,11 @@
     (is (= (g/generate-function-name "storage.objects.get")
            'get-objects))))
 
+(deftest generate-args
+  (testing "Generation of function arguments."
+    (is (= (g/generate-args parameters ["bar" "fooBar"])
+           '[bar foo-bar {:as optional-params :keys [baz]}]))))
+
 (deftest template->path-vector
   (testing "Uri template to path vector conversion."
     (is (= (g/template->path-vector "b/{fooBar}/c/{bar}" ["fooBar" "bar"])

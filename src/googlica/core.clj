@@ -57,11 +57,15 @@
        "\n")) ;; TODO: add description for parameters
 
 (defn generate-args
-  [parameters]
+  "Given a list of parameter maps and the parameterOrder vector,
+  generates the arguments vector."
+  [parameters parameterOrder]
   (let [[required optional] (->> parameters
                                  split-required-params
-                                 (mapv (comp (partial mapv ->kebab-case-symbol) keys)))]
-    `[~@required {:keys ~optional}]))
+                                 (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
+        ;; parameterOrder also contains the required params, so we get them from there
+        required (mapv ->kebab-case-symbol parameterOrder)]
+    `[~@required ~(hash-map :keys optional :as 'optional-params)]))
 
 (defn template->path-vector
   [path-template arg-names]
@@ -101,16 +105,17 @@
    :url `(str base-url ~@(generate-path path parameters))})
 
 (defn generate-function-from-method
-  [{:keys [id httpMethod parameters path] :as method}]
+  [{:keys [id httpMethod parameters path parameterOrder] :as method}]
   `(defn ~(generate-function-name id)
      ~(generate-docs method)
-     ~(generate-args parameters)
+     ~(generate-args parameters parameterOrder)
      (http/request ~(generate-request httpMethod path parameters))))
 
 (defn generate-ns-file
   "Given a service model, generates a clojure namespace with the implementation
   of all the API methods as functions, and writes it to file."
-  [{:keys [name version description documentationLink rootUrl servicePath] :as model}]
+  [{:keys [name version description documentationLink rootUrl servicePath]
+    :as model}]
   (let [symbols->str #(-> %
                           (f/pprint {:width 100}) ;; Fipp pretty prints clojure code nicely
                           with-out-str)]

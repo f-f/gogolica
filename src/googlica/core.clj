@@ -39,7 +39,7 @@
   "Generates global variables that are used throughout the generated namespace"
   [root-url service-path]
   `[(def ~'base-url ~(str root-url service-path))
-    (def ~'*api-key* nil)
+    (def (~'vary-meta ~'*api-key* ~'assoc :dynamic true) nil)
     ~'(defn ?assoc
         "Same as assoc, but skip the assoc if v is nil"
         [m & kvs]
@@ -48,7 +48,6 @@
              (filter second)
              (map vec)
              (into m)))])
-
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params, second with the optional"

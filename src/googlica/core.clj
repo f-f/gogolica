@@ -27,16 +27,34 @@
   "Generates the ns declaration for an API.
   Takes name, version, description and docs link, all strings."
   [name version desc docs-link]
-  `(ns
+  `(~'ns
     ~(symbol (str "googlica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
     ~(str desc "\n\nDocumentation link: " docs-link)
     (:gen-class)
-    (:require [clj-http.client :as http])))
+    (:require [clj-http.client :as http]
+              [clojure.string :as str])))
 
+;; TODO move util generation to another function or a dedicated namespace
 (defn generate-global-vars
   "Generates global variables that are used throughout the generated namespace"
   [root-url service-path]
-  `[(def base-url ~(str root-url service-path))])
+  `[(def ~'base-url ~(str root-url service-path))
+    (def ~'*api-key* nil)
+    ~'(defn ?assoc
+        "Same as assoc, but skip the assoc if v is nil"
+        [m & kvs]
+        (->> kvs
+             (partition 2)
+             (filter second)
+             (map vec)
+             (into m)))
+    ~'(defn body->get-params
+        [b]
+        (str "?" (str/join "&"
+                           (mapv (fn [[k v]]
+                                   (str k "=" v)) ;;TODO urlencode
+                                 b))))])
+
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params, second with the optional"
@@ -101,12 +119,29 @@
   "Generates the request map to be passed to the http library.
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
   [http-method path parameters]
-  {:method (-> http-method str/lower-case keyword)
-   :url `(str base-url ~@(generate-path path parameters))})
+  (let [query-params (->> parameters
+                          (filter (fn [[_ v]] (= (:location v) "query")))
+                          (mapv   (fn [[k _]] (name k))))
+        body `(~'?assoc ~'{"key" *api-key*}
+               ~@(mapcat (fn [p] [p (->kebab-case-symbol p)]) query-params))
+        method (-> http-method str/lower-case keyword)
+        query-params-str (if (= method :post)
+                           ""
+                           `(~'body->get-params ~body))
+        base-request {:method method
+                      :url `(~'str ~'base-url
+                             ~@(generate-path path parameters)
+                             ~query-params-str)}]
+    (if (= method :post)
+      (assoc base-request
+             :content-type "application/json"
+             :body body)
+      base-request)))
+
 
 (defn generate-function-from-method
   [{:keys [id httpMethod parameters path parameterOrder] :as method}]
-  `(defn ~(generate-function-name id)
+  `(~'defn ~(generate-function-name id)
      ~(generate-docs method)
      ~(generate-args parameters parameterOrder)
      (http/request ~(generate-request httpMethod path parameters))))

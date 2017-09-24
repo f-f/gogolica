@@ -69,13 +69,20 @@
 
 (defn generate-args
   "Given a list of parameter maps and the parameterOrder vector,
-  generates the arguments vector."
-  [parameters parameterOrder]
+  generates the arguments vector.
+  If the request is not nil, then the method also takes a request object,
+  that gets specified as the first parameter."
+  [parameters parameterOrder request]
   (let [[required optional] (->> parameters
                                  split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
         ;; parameterOrder also contains the required params, so we get them from there
-        required (mapv ->kebab-case-symbol parameterOrder)]
+        required (mapv ->kebab-case-symbol parameterOrder)
+        request-sym (when request
+                      (->kebab-case-symbol (get request :$ref)))
+        required (if request-sym
+                   (cons request-sym required)
+                   required)]
     `[~@required ~(hash-map :keys optional :as 'optional-params)]))
 
 (defn template->path-vector
@@ -132,10 +139,10 @@
 
 
 (defn generate-function-from-method
-  [{:keys [id httpMethod parameters path parameterOrder] :as method}]
+  [{:keys [id httpMethod parameters path parameterOrder request] :as method}]
   `(~'defn ~(generate-function-name id)
      ~(generate-docs method)
-     ~(generate-args parameters parameterOrder)
+     ~(generate-args parameters parameterOrder request)
      (http/request ~(generate-request httpMethod path parameters))))
 
 (defn generate-ns-file

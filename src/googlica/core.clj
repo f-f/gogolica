@@ -38,8 +38,8 @@
 (defn generate-global-vars
   "Generates global variables that are used throughout the generated namespace"
   [root-url service-path]
-  `[(def ~'base-url ~(str root-url service-path))
-    (def (~'vary-meta ~'*api-key* ~'assoc :dynamic true) nil)
+  `[(def \^ :dynamic ~'*api-key* nil)
+    (def ~'base-url ~(str root-url service-path))
     ~'(defn ?assoc
         "Same as assoc, but skip the assoc if v is nil"
         [m & kvs]
@@ -161,4 +161,10 @@
           ;;(mapv generate-function-from-method ;; TODO get all the methods)])))
          (apply concat) ;; <- this is for flattening the methods
          (mapv symbols->str)
+         ;; HACK: the *api-key* var should be dynamic (for rebinding)
+         ;; now, since the only way to define dynamic vars is through metadata,
+         ;; doing this in the def means using the ^ symbol, which is a reader macro.
+         ;; So we cannot have it as a clojure symbol in data. To go around this,
+         ;; we output a char \^, and do this replace once we generate the final string.
+         ((fn [sexps] (update sexps 1 #(str/replace % "\\^ :" "^:"))))
          (str/join "\n\n"))))

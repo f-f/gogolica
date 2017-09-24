@@ -31,8 +31,8 @@
     ~(symbol (str "googlica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
     ~(str desc "\n\nDocumentation link: " docs-link)
     (:gen-class)
-    (:require [clj-http.client :as http]
-              [clojure.string :as str])))
+    (:require [clj-http.client :as ~'http]
+              [clojure.string :as ~'str])))
 
 ;; TODO move util generation to another function or a dedicated namespace
 (defn generate-global-vars
@@ -147,7 +147,10 @@
                           (f/pprint {:width 100}) ;; Fipp pretty prints clojure code nicely
                           with-out-str)]
     (->> [[(generate-ns-sexp name version description documentationLink)]
-          (generate-global-vars rootUrl servicePath)]
+          (generate-global-vars rootUrl servicePath)
+          [(generate-function-from-method
+            (-> storage-model :resources :buckets :methods :insert))
+           (generate-function-from-method storage-object-get)]]
           ;;(mapv generate-function-from-method ;; TODO get all the methods)])))
          (apply concat) ;; <- this is for flattening the methods
          (mapv symbols->str)

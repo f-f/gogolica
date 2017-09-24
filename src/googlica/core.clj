@@ -60,7 +60,7 @@
   "Generates a symbol in the form of 'verb-resource', from a method id."
   [id]
   (let [[_ resource-name method-name] (str/split id #"\.")]
-    (-> (str method-name "-" resource-name)
+    (-> (str resource-name "-" method-name)
         ->kebab-case-symbol)))
 
 (defn generate-docs [method]

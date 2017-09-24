@@ -20,7 +20,7 @@
 (deftest generate-function-name
   (testing "Generation of function names"
     (is (= (g/generate-function-name "storage.objects.get")
-           'get-objects))))
+           'objects-get))))
 
 (deftest generate-args
   (testing "Generation of function arguments."

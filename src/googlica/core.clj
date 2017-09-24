@@ -47,13 +47,7 @@
              (partition 2)
              (filter second)
              (map vec)
-             (into m)))
-    ~'(defn body->get-params
-        [b]
-        (str "?" (str/join "&"
-                           (mapv (fn [[k v]]
-                                   (str k "=" v)) ;;TODO urlencode
-                                 b))))])
+             (into m)))])
 
 
 (defn split-required-params
@@ -122,21 +116,20 @@
   (let [query-params (->> parameters
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
-        body `(~'?assoc ~'{"key" *api-key*}
-               ~@(mapcat (fn [p] [p (->kebab-case-symbol p)]) query-params))
         method (-> http-method str/lower-case keyword)
-        query-params-str (if (= method :post)
-                           ""
-                           `(~'body->get-params ~body))
-        base-request {:method method
-                      :url `(~'str ~'base-url
-                             ~@(generate-path path parameters)
-                             ~query-params-str)}]
-    (if (= method :post)
-      (assoc base-request
-             :content-type "application/json"
-             :body body)
-      base-request)))
+        body {}] ;; TODO implement body for POSTs
+    {:method method
+     :url `(~'str ~'base-url
+            ~@(generate-path path parameters))
+     :content-type :json
+     :body body
+     ;; Generate code to build the query params map with only the parameters
+     ;; that are not nil (so have been passed in)
+     :query-params `(~'?assoc
+                     ~'{"key" *api-key*}
+                     ~@(mapcat (fn [p]
+                                 [p (->kebab-case-symbol p)])
+                               query-params))}))
 
 
 (defn generate-function-from-method

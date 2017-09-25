@@ -6,6 +6,14 @@
             [me.raynes.fs :as fs]
             [clj-http.client :as http]
             [fipp.clojure :as f]
+            [cheshire.core :refer [generate-string parse-string]]
+            [base64-clj.core :as b64]
+            [buddy.sign.jwt :as jwt]
+            [clj-time.core :as time]
+            [buddy.core.keys :as keys]
+            [buddy.sign.jws :as jws]
+            [buddy.core.bytes :as bytes]
+            [buddy.sign.compact :as cm]
             [camel-snake-kebab.core :refer :all]))
 
 (def model-paths
@@ -143,7 +151,8 @@
   `(~'defn ~(generate-function-name id)
      ~(generate-docs method)
      ~(generate-args parameters parameterOrder request)
-     (http/request ~(generate-request httpMethod path parameters))))
+     (~'println ~(generate-request httpMethod path parameters))
+     (~'http/request ~(generate-request httpMethod path parameters))))
 
 (defn generate-ns-file
   "Given a service model, generates a clojure namespace with the implementation
@@ -157,6 +166,8 @@
           (generate-global-vars rootUrl servicePath)
           [(generate-function-from-method
             (-> storage-model :resources :buckets :methods :insert))
+           (generate-function-from-method
+            (-> storage-model :resources :buckets :methods :list))
            (generate-function-from-method storage-object-get)]]
           ;;(mapv generate-function-from-method ;; TODO get all the methods)])))
          (apply concat) ;; <- this is for flattening the methods
@@ -168,3 +179,6 @@
          ;; we output a char \^, and do this replace once we generate the final string.
          ((fn [sexps] (update sexps 1 #(str/replace % "\\^ :" "^:"))))
          (str/join "\n\n"))))
+
+;; (load-string (slurp "api-key.edn"))
+;; (http/request {:method :post, :url "https://www.googleapis.com/storage/v1/b" :content-type :json, :body "{\"name\":\"test-bucket\"}", :query-params {"key" googlica.storage.v1/*api-key* "project" "ksf-dev"}

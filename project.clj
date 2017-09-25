@@ -8,7 +8,13 @@
                  [me.raynes/fs "1.4.6"]
                  [clj-http "3.7.0"]
                  [fipp "0.6.10"]
-                 [com.cemerick/url "0.1.1"]
+                 [buddy/buddy-sign "2.2.0"]
+                 [clj-jwt "0.1.1"]
+                 [base64-clj "0.1.1"]
+                 [buddy/buddy-core "1.4.0"] 
+                 [clj-time "0.14.0"]
+                 [com.taoensso/nippy "2.11.1"]
+                 [cheshire "5.8.0"]
                  [camel-snake-kebab "0.4.0"]]
   :main ^:skip-aot googlica.core
   :target-path "target/%s"

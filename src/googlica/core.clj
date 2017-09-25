@@ -107,13 +107,15 @@
         template->path-vector'
         (fn [result-acc template matches]
           (if-some [[match arg] (first matches)]
-            (let [[pre post] (str/split template
-                                      (re-pattern (str "\\{" arg "\\}")))]
+            (let [[pre post] (str/split template (re-pattern (str "\\{" arg "\\}")))]
               (recur (concat result-acc [pre (get args->symbols arg)])
                      post
                      (rest matches)))
             result-acc))]
-    (template->path-vector' [] path-template matches)))
+    ;; When path template does not have vars to substitute, shortcircuit
+    (if (seq matches)
+      (template->path-vector' [] path-template matches)
+      (list path-template))))
 
 (defn generate-path
   [template-uri parameters]

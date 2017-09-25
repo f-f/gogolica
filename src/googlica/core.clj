@@ -181,6 +181,3 @@
          ;; we output a char \^, and do this replace once we generate the final string.
          ((fn [sexps] (update sexps 1 #(str/replace % "\\^ :" "^:"))))
          (str/join "\n\n"))))
-
-;; (load-string (slurp "api-key.edn"))
-;; (http/request {:method :post, :url "https://www.googleapis.com/storage/v1/b" :content-type :json, :body "{\"name\":\"test-bucket\"}", :query-params {"key" googlica.storage.v1/*api-key* "project" "ksf-dev"}

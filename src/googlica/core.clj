@@ -181,3 +181,29 @@
          ;; we output a char \^, and do this replace once we generate the final string.
          ((fn [sexps] (update sexps 1 #(str/replace % "\\^ :" "^:"))))
          (str/join "\n\n"))))
+
+
+;;;;; AUTH CODE
+;; TODO: move to its own namespace once it works
+
+(def access-request-url "https://www.googleapis.com/oauth2/v4/token")
+
+(defn make-jwt []
+  ;; TODO: use a variable instead of reading a file
+  (let [service-account (-> (slurp "key.json") (parse-string true))
+        privkey (-> service-account :private_key keys/str->private-key)
+        claim {:iss (:client_email service-account)
+               :scope "https://www.googleapis.com/auth/devstorage.full_control"
+               :aud access-request-url
+               :exp (time/plus (time/now) (time/minutes 2))
+               :iat (time/now)}]
+    (jwt/sign claim privkey {:alg :rs256})))
+
+(defn get-new-oauth2-token [jwt]
+  (-> (http/request {:method :post
+                     :url access-request-url
+                     :form-params {:grant_type "urn:ietf:params:oauth:grant-type:jwt-bearer"
+                                   :assertion jwt}})
+      :body
+      (parse-string true)
+      :access_token))

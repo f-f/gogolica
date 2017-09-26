@@ -5,6 +5,8 @@
             [clojure.set :as set]
             [me.raynes.fs :as fs]
             [clj-http.client :as http]
+            [googlica.auth :as auth]
+            [googlica.common :as common]
             [fipp.clojure :as f]
             [cheshire.core :refer [generate-string parse-string]]
             [camel-snake-kebab.core :refer :all]))
@@ -32,23 +34,14 @@
     ~(symbol (str "googlica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
     ~(str desc "\n\nDocumentation link: " docs-link)
     (:gen-class)
-    (:require [clj-http.client :as ~'http]
+    (:require [googlica.common :refer [~'?assoc ~'exec-http] :as ~'common]
               [clojure.string :as ~'str])))
 
 ;; TODO move util generation to another function or a dedicated namespace
 (defn generate-global-vars
   "Generates global variables that are used throughout the generated namespace"
   [root-url service-path]
-  `[(def \^ :dynamic ~'*api-key* nil)
-    (def ~'base-url ~(str root-url service-path))
-    ~'(defn ?assoc
-        "Same as assoc, but skip the assoc if v is nil"
-        [m & kvs]
-        (->> kvs
-             (partition 2)
-             (filter second)
-             (map vec)
-             (into m)))])
+  `[(def ~'base-url ~(str root-url service-path))])
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params, second with the optional"
@@ -167,10 +160,4 @@
           ;;(mapv generate-function-from-method ;; TODO get all the methods)])))
          (apply concat) ;; <- this is for flattening the methods
          (mapv symbols->str)
-         ;; HACK: the *api-key* var should be dynamic (for rebinding)
-         ;; now, since the only way to define dynamic vars is through metadata,
-         ;; doing this in the def means using the ^ symbol, which is a reader macro.
-         ;; So we cannot have it as a clojure symbol in data. To go around this,
-         ;; we output a char \^, and do this replace once we generate the final string.
-         ((fn [sexps] (update sexps 1 #(str/replace % "\\^ :" "^:"))))
          (str/join "\n\n"))))

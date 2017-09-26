@@ -3,6 +3,7 @@
   (:require [clj-http.client :as http]
             [buddy.sign.jwt :as jwt]
             [clj-time.core :as time]
+            [clojure.core.cache :as cache]
             [buddy.core.keys :as keys]
             [cheshire.core :refer [parse-string generate-string]]))
 
@@ -64,15 +65,3 @@
   (assoc-in req-map [:headers "Authorization"] (str "Bearer " (-> scope
                                                                   sign-jwt
                                                                   get-new-oauth2-token))))
-
-(defn exec-http
-  "Given a request map, executes it while taking care of authentication
-  and retries"
-  [req-map scope]
-  ;; TODO accept multiple scopes and try requesting multiple of them
-  (println req-map)
-  (-> req-map
-      (wrap-auth scope)
-      (http/request)
-      :body ; TODO: handle exceptions and retry here
-      (parse-string true)))

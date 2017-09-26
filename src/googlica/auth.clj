@@ -10,16 +10,16 @@
 
 ;;;; Key management
 
-(def ^:dynamic *json-key* nil)
+(def ^:dynamic *service-account* nil)
 
 (defn set-key!
-  "Updates the dynamic var *json-key* with the provided data"
+  "Updates the dynamic var *service-account* with the provided data"
   [new-key]
-  (alter-var-root #'*json-key* (constantly new-key)))
+  (alter-var-root #'*service-account* (constantly new-key)))
 
 (defn key-from-file
   "Given a file path containing the json service account key,
-  read it, convert it to a clojure map, and save it in the *json-key* var"
+  read it, convert it to a clojure map, and save it in the *service-account* var"
   [path]
   (-> (slurp path)
       (parse-string true)
@@ -38,8 +38,8 @@
 (defn sign-jwt
   "Given a scope string, generates a new signed JWT claim"
   [scope]
-  (let [privkey (keys/str->private-key (:private_key *json-key*))
-        claim {:iss (:client_email *json-key*)
+  (let [privkey (keys/str->private-key (:private_key *service-account*))
+        claim {:iss (:client_email *service-account*)
                :scope scope
                :aud access-request-url
                :exp (time/plus (time/now) (time/minutes 2))

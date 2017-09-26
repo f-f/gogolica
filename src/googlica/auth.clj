@@ -28,8 +28,11 @@
 
 ;;;; JWT and OAuth2
 
-;; URL for requesting new OAuth2 tokens
-(def access-request-url "https://www.googleapis.com/oauth2/v4/token")
+(def access-request-url
+  "URL for requesting new OAuth2 tokens"
+  "https://www.googleapis.com/oauth2/v4/token")
+
+;; TODO: Cache role:token so we don't have to get a new token for every request
 
 (defn sign-jwt
   "Given a scope string, generates a new signed JWT claim"
@@ -54,9 +57,22 @@
 
 ;;;; Requests utils
 
+;; TODO: cache roles
 (defn wrap-auth
   "Given a request map, enriches it with a new OAuth2 token."
   [req-map scope]
   (assoc-in req-map [:headers "Authorization"] (str "Bearer " (-> scope
                                                                   sign-jwt
                                                                   get-new-oauth2-token))))
+
+(defn exec-http
+  "Given a request map, executes it while taking care of authentication
+  and retries"
+  [req-map scope]
+  ;; TODO accept multiple scopes and try requesting multiple of them
+  (println req-map)
+  (-> req-map
+      (wrap-auth scope)
+      (http/request)
+      :body ; TODO: handle exceptions and retry here
+      (parse-string true)))

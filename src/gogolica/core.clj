@@ -1,12 +1,12 @@
-(ns googlica.core
+(ns gogolica.core
   (:gen-class)
   (:require [cheshire.core :as json]
             [clojure.string :as str]
             [clojure.set :as set]
             [me.raynes.fs :as fs]
             [clj-http.client :as http]
-            [googlica.auth :as auth]
-            [googlica.common :as common]
+            [gogolica.auth :as auth]
+            [gogolica.common :as common]
             [fipp.clojure :as f]
             [cheshire.core :refer [generate-string parse-string]]
             [camel-snake-kebab.core :refer :all]))
@@ -31,10 +31,10 @@
   Takes name, version, description and docs link, all strings."
   [name version desc docs-link]
   `(~'ns
-    ~(symbol (str "googlica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
+    ~(symbol (str "gogolica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
     ~(str desc "\n\nDocumentation link: " docs-link)
     (:gen-class)
-    (:require [googlica.common :refer [~'?assoc ~'exec-http] :as ~'common]
+    (:require [gogolica.common :refer [~'?assoc ~'exec-http] :as ~'common]
               [clojure.string :as ~'str])))
 
 ;; TODO move util generation to another function or a dedicated namespace

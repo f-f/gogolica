@@ -1,4 +1,4 @@
-(ns googlica.auth
+(ns gogolica.auth
   (:gen-class)
   (:require [clj-http.client :as http]
             [buddy.sign.jwt :as jwt]

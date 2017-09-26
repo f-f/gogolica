@@ -1,6 +1,6 @@
-(ns googlica.core-test
+(ns gogolica.core-test
   (:require [clojure.test :refer :all]
-            [googlica.core :as g]))
+            [gogolica.core :as g]))
 
 (def parameters {:fooBar {:required true
                           :location "path"}

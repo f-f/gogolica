@@ -33,7 +33,19 @@
   "URL for requesting new OAuth2 tokens"
   "https://www.googleapis.com/oauth2/v4/token")
 
-;; TODO: Cache role:token so we don't have to get a new token for every request
+(def C
+  "Cache for role:token so we don't have to get a new token for every request"
+  (atom (cache/ttl-cache-factory {} :ttl 3500000))) ;; 3500 seconds
+
+(defmacro with-cache
+  "Given a key and an expression, will set the key in the cache to the result
+  of evaluating it if that key is expired."
+  [key body-expr]
+  `(let [new-cache# (if (cache/has? @C ~key)
+                      (cache/hit @C ~key)
+                      (cache/miss @C ~key ((fn [] ~body-expr))))]
+     (reset! C new-cache#)
+     (get new-cache# ~key)))
 
 (defn sign-jwt
   "Given a scope string, generates a new signed JWT claim"
@@ -46,22 +58,26 @@
                :iat (time/now)}]
     (jwt/sign claim privkey {:alg :rs256})))
 
-(defn get-new-oauth2-token [signed-jwt-claim]
-  (-> (http/request {:method :post
-                     :url access-request-url
-                     :form-params {:grant_type "urn:ietf:params:oauth:grant-type:jwt-bearer"
-                                   :assertion signed-jwt-claim}})
-      :body ;; TODO: handle http exceptions in here
-      (parse-string true)
-      :access_token))
+(defn get-oauth2-token
+  "Given a scope string, returns a cached OAuth2 token, or requests a new one
+  if the cached one (for that scope) is expired"
+  [scope]
+  (with-cache scope
+    (-> {:method :post
+         :url access-request-url
+         :form-params {:grant_type "urn:ietf:params:oauth:grant-type:jwt-bearer"
+                       :assertion (sign-jwt scope)}}
+        (http/request)
+        :body ;; TODO: handle http exceptions in here
+        (parse-string true)
+        :access_token)))
 
 
 ;;;; Requests utils
 
-;; TODO: cache roles
 (defn wrap-auth
   "Given a request map, enriches it with a new OAuth2 token."
   [req-map scope]
-  (assoc-in req-map [:headers "Authorization"] (str "Bearer " (-> scope
-                                                                  sign-jwt
-                                                                  get-new-oauth2-token))))
+  (assoc-in req-map
+            [:headers "Authorization"]
+            (str "Bearer " (get-oauth2-token scope))))

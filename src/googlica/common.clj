@@ -1,6 +1,7 @@
 (ns googlica.common
   (:gen-class)
   (:require [googlica.auth :as auth]
+            [cheshire.core :refer [parse-string generate-string]]
             [clj-http.client :as http]))
 
 (defn ?assoc

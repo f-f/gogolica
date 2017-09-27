@@ -5,7 +5,8 @@
             [clj-time.core :as time]
             [clojure.core.cache :as cache]
             [buddy.core.keys :as keys]
-            [cheshire.core :refer [parse-string generate-string]]))
+            [cheshire.core :refer [parse-string generate-string]]
+            [clojure.string :as str]))
 
 
 ;;;; Key management
@@ -58,6 +59,8 @@
                :iat (time/now)}]
     (jwt/sign claim privkey {:alg :rs256})))
 
+;; TODO: now the caching happens for each scope string, which may contain more than
+;; one scope. We should instead cache scopes singularly.
 (defn get-oauth2-token
   "Given a scope string, returns a cached OAuth2 token, or requests a new one
   if the cached one (for that scope) is expired"
@@ -76,8 +79,8 @@
 ;;;; Requests utils
 
 (defn wrap-auth
-  "Given a request map, enriches it with a new OAuth2 token."
-  [req-map scope]
+  "Given a request map and a vector of scopes, enriches it with a new OAuth2 token."
+  [req-map scopes]
   (assoc-in req-map
             [:headers "Authorization"]
-            (str "Bearer " (get-oauth2-token scope))))
+            (str "Bearer " (get-oauth2-token (str/join " " scopes)))))

@@ -27,6 +27,20 @@
       (set-key!)
       (select-keys [:client_email :project_id])))
 
+(defn read-application-credentials
+  "Google specification for effortless auth on their services:
+  https://developers.google.com/identity/protocols/application-default-credentials
+  Supporting only reading from the standard environment variable for now;
+  this function reads the path from the variable, and loads the service account key
+  into the *service-account* var"
+  []
+  (try (key-from-file (System/getenv "GOOGLE_APPLICATION_CREDENTIALS"))
+       (catch Exception e nil)))
+
+(defn authenticated?
+  "If we are authenticated, return the email of the loaded service account"
+  []
+  (:client_email *service-account*))
 
 ;;;; JWT and OAuth2
 

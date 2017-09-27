@@ -1,5 +1,8 @@
 # Gogolica
 
+<img src="https://upload.wikimedia.org/wikipedia/commons/d/df/N.Gogol_by_A.Ivanov_%281841%2C_Russian_museum%29.jpg"
+title="Nikolai Vasilievich Gogol" align="right" padding="5px" height="250px">
+
 > "Always think of what is useful and not what is beautiful. Beauty will come of its own accord."
 >
 > *Nikolai Vasilievich Gogol*
@@ -7,13 +10,9 @@
 > "You can't imagine how stupid the whole world has grown nowadays."
 >
 > *Also Nikolai Vasilievich Gogol*
-
-<img src="https://upload.wikimedia.org/wikipedia/commons/d/df/N.Gogol_by_A.Ivanov_%281841%2C_Russian_museum%29.jpg"
-title="Nikolai Vasilievich Gogol" align="right" padding="5px">
-
 <br clear=all /><br />
 
-*Warning: ALPHA STATUS*
+***Warning: ALPHA STATUS***
 
 Gogolica is an auto-generated Clojure bindings library for Google APIs.
 

@@ -1,19 +1,38 @@
 #!/usr/bin/env bash
 
-source="$1"
-target="$2"
+# This script clones the Google auto-generated Go client,
+# which versions their JSON files from the Discovery API,
+# and copies the model files to our repository, so we can also version them.
+
+
+# Source for the models
+source="vendor/google-api-go-client"
+# Target folder for our json models
+target="model"
 
 if [ -z "$source" ] || [ -z "$target" ]; then
     echo "Usage: copy-models <SOURCE> <TARGET>"
     exit 1
 fi
 
+# Clone the model source repo if we don't have it already, pull otherwise
+if [ ! -d "$source" ]; then
+    git clone https://github.com/google/google-api-go-client $source
+else
+    bash -c "cd $source && git pull"
+fi
+
+
+# Copy the files over to $target
 mkdir $target
 
 for dir in $source/*/; do
+    # if there is json in the folder, copy it
     if find $dir -type f -name '*.json' | grep '/v[a-z0-9_\.]*/' 2>&1 > /dev/null; then
         name=$(basename $dir)
         echo " -> Copy $name"
         cp -r $dir $target/$name
+        # but remove any .go source
+        find . -type f -name '*.go' -delete
     fi
 done

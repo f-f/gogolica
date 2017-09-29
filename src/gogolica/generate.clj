@@ -13,7 +13,7 @@
             [cheshire.core :refer [generate-string parse-string]]
             [camel-snake-kebab.core :refer :all]))
 
-(defn generate-ns-sexp
+(defn generate-ns-declaration
   "Generates the ns declaration for an API.
   Takes name, version, description and docs link, all strings."
   [name version desc docs-link]
@@ -130,22 +130,27 @@
      (~'println ~(generate-request httpMethod path parameters))
     (~'http/request ~(generate-request httpMethod path parameters))))
 
-(defn generate-ns-file
+(defn pprint-symbols
+  [symbols]
+  (-> symbols
+      (f/pprint {:width 100}) ;; Fipp pretty prints clojure code nicely
+      with-out-str))
+
+(defn generate-ns
   "Given a service model, generates a clojure namespace with the implementation
-  of all the API methods as functions, and writes it to file."
+   of all the API methods as functions and returns it as a pretty string."
   [{:keys [name version description documentationLink rootUrl servicePath]
     :as model}]
-  (let [symbols->str #(-> %
-                          (f/pprint {:width 100}) ;; Fipp pretty prints clojure code nicely
-                          with-out-str)]
-    (->> [[(generate-ns-sexp name version description documentationLink)]
-          (generate-global-vars rootUrl servicePath)
-          [(generate-function-from-method
-            (-> model/storage-model :resources :buckets :methods :insert))
-           (generate-function-from-method
-            (-> model/storage-model :resources :buckets :methods :list))
-           (generate-function-from-method model/storage-object-get)]]
-          ;;(mapv generate-function-from-method ;; TODO get all the methods)])))
-         (apply concat) ;; <- this is for flattening the methods
-         (mapv symbols->str)
+  (let [ns-declaration (generate-ns-declaration name version description documentationLink)
+        global-vars (generate-global-vars rootUrl servicePath)
+        functions (->> (:resources model)
+                       (mapcat
+                        (fn [[resource-id resource]]
+                          (for [[method-id method] (:methods resource)]
+                            (generate-function-from-method method)))))]
+    (->> (concat
+          [ns-declaration]
+          global-vars
+          functions)
+         (map pprint-symbols)
          (str/join "\n\n"))))

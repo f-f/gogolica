@@ -14,20 +14,24 @@
             [camel-snake-kebab.core :refer :all]))
 
 (defn generate-ns-declaration
-  "Generates the ns declaration for an API.
-  Takes name, version, description and docs link, all strings."
-  [name version desc docs-link]
+  "Generates the ns declaration for the given API model."
+  [{name :name
+    version :version
+    desc :description
+    docs-link :documentationLink}]
   `(~'ns
     ~(symbol (str "gogolica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
-    ~(str desc "\n\nDocumentation link: " docs-link)
+    ~(str desc "\n\n"
+          "Documentation link: " docs-link)
     (:gen-class)
     (:require [gogolica.common :refer [~'?assoc ~'exec-http] :as ~'common]
               [clojure.string :as ~'str])))
 
-;; TODO move util generation to another function or a dedicated namespace
 (defn generate-global-vars
-  "Generates global variables that are used throughout the generated namespace"
-  [root-url service-path]
+  "Generates global variables that are used throughout the generated
+   namespace for the given API model"
+  [{root-url :rootUrl
+    service-path :servicePath}]
   `[(def ~'base-url ~(str root-url service-path))])
 
 (defn split-required-params
@@ -49,16 +53,18 @@
        "\n")) ;; TODO: add description for parameters
 
 (defn generate-args
-  "Given a list of parameter maps and the parameterOrder vector,
-  generates the arguments vector.
+  "Given a method model, uses a list of parameter maps and the parameterOrder vector,
+  to generate the arguments vector.
   If the request is not nil, then the method also takes a request object,
   that gets specified as the first parameter."
-  [parameters parameterOrder request]
+  [{parameters :parameters
+    parameter-order :parameterOrder
+    request :request}]
   (let [[required optional] (->> parameters
                                  split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
-        ;; parameterOrder also contains the required params, so we get them from there
-        required (mapv ->kebab-case-symbol parameterOrder)
+        ;; parameter-order also contains the required params, so we get them from there
+        required (mapv ->kebab-case-symbol parameter-order)
         request-sym (when request
                       (->kebab-case-symbol (get request :$ref)))
         required (if request-sym
@@ -102,7 +108,9 @@
 (defn generate-request
   "Generates the request map to be passed to the http library.
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
-  [http-method path parameters]
+  [{http-method :httpMethod
+    path :path
+    parameters :parameters}]
   (let [query-params (->> parameters
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
@@ -123,12 +131,12 @@
 
 
 (defn generate-function-from-method
-  [{:keys [id httpMethod parameters path parameterOrder request] :as method}]
+  [{:keys [id] :as method}]
   `(~'defn ~(generate-function-name id)
      ~(generate-docs method)
-     ~(generate-args parameters parameterOrder request)
-     (~'println ~(generate-request httpMethod path parameters))
-    (~'http/request ~(generate-request httpMethod path parameters))))
+     ~(generate-args method)
+     (~'println ~(generate-request method))
+    (~'http/request ~(generate-request method))))
 
 (defn pprint-symbols
   [symbols]
@@ -139,10 +147,9 @@
 (defn generate-ns
   "Given a service model, generates a clojure namespace with the implementation
    of all the API methods as functions and returns it as a pretty string."
-  [{:keys [name version description documentationLink rootUrl servicePath]
-    :as model}]
-  (let [ns-declaration (generate-ns-declaration name version description documentationLink)
-        global-vars (generate-global-vars rootUrl servicePath)
+  [model]
+  (let [ns-declaration (generate-ns-declaration model)
+        global-vars (generate-global-vars model)
         functions (->> (:resources model)
                        (mapcat
                         (fn [[resource-id resource]]

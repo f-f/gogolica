@@ -15,14 +15,11 @@
 
 (defn generate-ns-declaration
   "Generates the ns declaration for the given API model."
-  [{name :name
-    version :version
-    desc :description
-    docs-link :documentationLink}]
+  [{:keys [name version description documentation-link]}]
   `(~'ns
     ~(symbol (str "gogolica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
-    ~(str desc "\n\n"
-          "Documentation link: " docs-link)
+    ~(str description "\n\n"
+          "Documentation link: " documentation-link)
     (:gen-class)
     (:require [gogolica.common :refer [~'?assoc ~'exec-http] :as ~'common]
               [clojure.string :as ~'str])))
@@ -30,8 +27,7 @@
 (defn generate-global-vars
   "Generates global variables that are used throughout the generated
    namespace for the given API model"
-  [{root-url :rootUrl
-    service-path :servicePath}]
+  [{:keys [root-url service-path]}]
   `[(def ~'base-url ~(str root-url service-path))])
 
 (defn split-required-params
@@ -57,9 +53,7 @@
   to generate the arguments vector.
   If the request is not nil, then the method also takes a request object,
   that gets specified as the first parameter."
-  [{parameters :parameters
-    parameter-order :parameterOrder
-    request :request}]
+  [{:keys [parameters parameter-order request]}]
   (let [[required optional] (->> parameters
                                  split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
@@ -108,9 +102,7 @@
 (defn generate-request
   "Generates the request map to be passed to the http library.
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
-  [{http-method :httpMethod
-    path :path
-    parameters :parameters}]
+  [{:keys [http-method path parameters]}]
   (let [query-params (->> parameters
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))

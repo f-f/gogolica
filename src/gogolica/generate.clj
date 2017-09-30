@@ -15,7 +15,10 @@
 
 (defn generate-ns-declaration
   "Generates the ns declaration for the given API model."
-  [{:keys [name version description documentation-link]}]
+  [{name :name
+    version :version
+    description :description
+    documentation-link :documentationLink}]
   `(~'ns
     ~(symbol (str "gogolica." name "." version)) ;; HACK: instead of having the ns as string, we should probably read it from the current one
     ~(str description "\n\n"
@@ -29,7 +32,8 @@
 (defn generate-global-vars
   "Generates global variables that are used throughout the generated
    namespace for the given API model"
-  [{:keys [root-url service-path]}]
+  [{root-url :rootUrl
+    service-path :servicePath}]
   `[(def ~'base-url ~(str root-url service-path))])
 
 (defn split-required-params
@@ -55,7 +59,9 @@
   to generate the arguments vector.
   If the request is not nil, then the method also takes a request object,
   that gets specified as the first parameter."
-  [{:keys [parameters parameter-order request]}]
+  [{parameters :parameters
+    parameter-order :parameterOrder
+    request :request}]
   (let [[required optional] (->> parameters
                                  split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
@@ -104,7 +110,9 @@
 (defn generate-request
   "Generates the request map to be passed to the http library.
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
-  [{:keys [http-method path parameters]}]
+  [{http-method :httpMethod
+    path :path
+    parameters :parameters}]
   (let [query-params (->> parameters
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
@@ -122,7 +130,6 @@
                      ~@(mapcat (fn [p]
                                  [p (->kebab-case-symbol p)])
                                query-params))}))
-
 
 (defn generate-function-from-method
   [{:keys [id scopes] :as method}]

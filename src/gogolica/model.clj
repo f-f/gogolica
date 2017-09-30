@@ -3,7 +3,7 @@
   (:gen-class)
   (:require [cheshire.core :as json]
             [me.raynes.fs :as fs]
-            [camel-snake-kebab.core :refer [->kebab-case-keyword]]))
+            [camel-snake-kebab.core :refer :all]))
 
 (def model-paths
   (->> (fs/find-files "model" #".*\.json")
@@ -12,7 +12,7 @@
 (defn read-model [path]
   (-> path
       slurp
-      (json/decode ->kebab-case-keyword)))
+      (json/decode true)))
 
 (def model-maps (mapv read-model model-paths))
 

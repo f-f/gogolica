@@ -1,6 +1,7 @@
 (ns gogolica.core-test
   (:require [clojure.test :refer :all]
-            [gogolica.gen.generate :as g]))
+            [gogolica.gen.generate :as g]
+            [gogolica.gen.model    :as m]))
 
 (def parameters {:fooBar {:required true
                           :location "path"}
@@ -10,7 +11,7 @@
 
 (deftest split-required-params
   (testing "Splitting of method parameters between required and not."
-    (is (= (g/split-required-params parameters)
+    (is (= (m/split-required-params parameters)
            [{:fooBar {:required true
                       :location "path"}
              :bar {:required true

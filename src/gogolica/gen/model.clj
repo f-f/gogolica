@@ -24,6 +24,9 @@
        first))
 
 (defn select-resource-methods
+  "Takes a map where the keys are the resources and values are
+   the lists of methods, and selects only those resources with
+   those methods."
   [model resource-methods]
   (-> model
       (update
@@ -40,7 +43,14 @@
                                   #(select-keys % wanted-methods)))])))
                 (into {})))))))
 
+(defn split-required-params
+  "Returns a vector of two maps: first with the required params,
+   second with the optional."
+  [parameters]
+  (->> parameters
+       ((juxt filter remove) (fn [[k v]] (:required v)))
+       (mapv #(into {} %))))
+
 (def storage-model (model-for :storage :v1))
 
 (def storage-object-get (-> storage-model :resources :objects :methods :get))
-

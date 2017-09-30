@@ -6,11 +6,10 @@
             [clojure.set :as set]
             [me.raynes.fs :as fs]
             [clj-http.client :as http]
-            [gogolica.core.auth :as auth]
-            [gogolica.core.common :as common]
             [fipp.clojure :as f]
             [cheshire.core :refer [generate-string parse-string]]
-            [camel-snake-kebab.core :refer :all]))
+            [camel-snake-kebab.core :refer :all]
+            [gogolica.gen.model :as model]))
 
 (defn generate-ns-declaration
   "Generates the ns declaration for the given API model."
@@ -39,13 +38,6 @@
   `[(def ~'root-url ~root-url)
     (def ~'base-url ~(str root-url service-path))])
 
-(defn split-required-params
-  "Returns a vector of two maps: first with the required params, second with the optional"
-  [parameters]
-  (->> parameters
-       ((juxt filter remove) (fn [[k v]] (:required v)))
-       (mapv #(into {} %))))
-
 (defn generate-function-name
   "Generates a symbol in the form of 'verb-resource', from a method id."
   [id]
@@ -70,7 +62,7 @@
   (let [[required optional] (->> parameters
                                  (merge (when media-download
                                           {:alt {:position "query"}}))
-                                 split-required-params
+                                 model/split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
         ;; parameter-order also contains the required params, so we get them from there
         required (mapv ->kebab-case-symbol parameter-order)

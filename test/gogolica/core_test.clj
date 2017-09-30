@@ -24,10 +24,13 @@
 
 (deftest generate-args
   (testing "Generation of function arguments."
-    (is (= (g/generate-args parameters ["bar" "fooBar"] nil)
+    (is (= (g/generate-args {:parameters parameters
+                             :parameterOrder ["bar" "fooBar"]})
            '[bar foo-bar {:as optional-params :keys [baz]}])))
   (testing "Generation of function arguments, when request body is present."
-    (is (= (g/generate-args parameters ["bar" "fooBar"] {:$ref "Bucket"})
+    (is (= (g/generate-args {:parameters parameters
+                             :parameterOrder ["bar" "fooBar"]
+                             :request {:$ref "Bucket"}})
            '[bucket bar foo-bar {:as optional-params :keys [baz]}]))))
 
 (deftest template->path-vector
@@ -36,7 +39,10 @@
            '("b/" foo-bar "/c/" bar))))
   (testing "Uri template conversion with no vars."
     (is (= (g/template->path-vector "b" [])
-           '("b")))))
+           '("b"))))
+  (testing "Uri template conversion with no vars at the end"
+    (is (= (g/template->path-vector "b/{fooBar}/o" ["fooBar"])
+           '("b/" foo-bar "/o")))))
 
 (deftest generate-path
   (testing "Uri template to path vector conversion, with raw parameters."

@@ -1,4 +1,4 @@
-(ns gogolica.auth
+(ns gogolica.core.auth
   (:gen-class)
   (:require [clj-http.client :as http]
             [buddy.sign.jwt :as jwt]

@@ -1,4 +1,4 @@
-(ns gogolica.generate
+(ns gogolica.gen.generate
   "A namespace for functions that do most of the actual codegen of gogolica."
   (:gen-class)
   (:require [cheshire.core :as json]
@@ -6,12 +6,10 @@
             [clojure.set :as set]
             [me.raynes.fs :as fs]
             [clj-http.client :as http]
-            [gogolica.auth :as auth]
-            [gogolica.common :as common]
-            [gogolica.model :as model]
             [fipp.clojure :as f]
             [cheshire.core :refer [generate-string parse-string]]
-            [camel-snake-kebab.core :refer :all]))
+            [camel-snake-kebab.core :refer :all]
+            [gogolica.gen.model :as model]))
 
 (defn generate-ns-declaration
   "Generates the ns declaration for the given API model."
@@ -24,9 +22,11 @@
     ~(str description "\n\n"
           "Documentation link: " documentation-link)
     (:gen-class)
-    (:require [gogolica.common :refer [~'?assoc ~'exec-http] :as ~'common]
-              [gogolica.auth :refer [~'authenticated?
-                                     ~'read-application-credentials] :as ~'auth]
+    (:require [gogolica.core.common :refer [~'?assoc ~'exec-http] :as ~'common]
+              [gogolica.core.auth
+               :refer [~'authenticated?
+                       ~'read-application-credentials]
+               :as ~'auth]
               [cheshire.core :refer [~'generate-string]]
               [clojure.string :as ~'str])))
 
@@ -37,13 +37,6 @@
     service-path :servicePath}]
   `[(def ~'root-url ~root-url)
     (def ~'base-url ~(str root-url service-path))])
-
-(defn split-required-params
-  "Returns a vector of two maps: first with the required params, second with the optional"
-  [parameters]
-  (->> parameters
-       ((juxt filter remove) (fn [[k v]] (:required v)))
-       (mapv #(into {} %))))
 
 (defn generate-function-name
   "Generates a symbol in the form of 'verb-resource', from a method id."
@@ -69,7 +62,7 @@
   (let [[required optional] (->> parameters
                                  (merge (when media-download
                                           {:alt {:position "query"}}))
-                                 split-required-params
+                                 model/split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
         ;; parameter-order also contains the required params, so we get them from there
         required (mapv ->kebab-case-symbol parameter-order)

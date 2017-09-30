@@ -1,21 +1,12 @@
-(ns gogolica.core-test
+(ns gogolica.gen.generate-test
   (:require [clojure.test :refer :all]
-            [gogolica.generate :as g]))
+            [gogolica.gen.generate :as g]))
 
 (def parameters {:fooBar {:required true
                           :location "path"}
                  :bar {:required true
                        :location "path"}
                  :baz {:location "query"}})
-
-(deftest split-required-params
-  (testing "Splitting of method parameters between required and not."
-    (is (= (g/split-required-params parameters)
-           [{:fooBar {:required true
-                      :location "path"}
-             :bar {:required true
-                   :location "path"}}
-            {:baz {:location "query"}}]))))
 
 (deftest generate-function-name
   (testing "Generation of function names"

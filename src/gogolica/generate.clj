@@ -35,7 +35,8 @@
    namespace for the given API model"
   [{root-url :rootUrl
     service-path :servicePath}]
-  `[(def ~'base-url ~(str root-url service-path))])
+  `[(def ~'root-url ~root-url)
+    (def ~'base-url ~(str root-url service-path))])
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params, second with the optional"
@@ -62,7 +63,8 @@
   that gets specified as the first parameter."
   [{parameters :parameters
     parameter-order :parameterOrder
-    request :request}]
+    request :request
+    media-upload :mediaUpload}]
   (let [[required optional] (->> parameters
                                  split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
@@ -72,6 +74,9 @@
                       (->kebab-case-symbol (get request :$ref)))
         required (if request-sym
                    (cons request-sym required)
+                   required)
+        required (if media-upload
+                   (cons 'file-path required)
                    required)]
     `[~@required ~(hash-map :keys optional :as 'optional-params)]))
 
@@ -113,29 +118,43 @@
   [{http-method :httpMethod
     path :path
     parameters :parameters
-    request :request}]
+    request :request
+    media-upload :mediaUpload}]
   (let [query-params (->> parameters
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
         method (-> http-method str/lower-case keyword)
-        ;; If there's a request key in the model, we take the clojure map
+        ;; If there's a :request key in the model, we take the clojure map
         ;; that should be passed as the object, convert it to json, and
-        ;; attach it to the body
-        body (if request
-               `(~'generate-string ~(->kebab-case-symbol (get request :$ref)))
-               "")]
+        ;; attach it to the body.
+        ;; But if there's a mediaUpload key then we should upload a file, so the
+        ;; :request key here indicates the schema of the file metadata.
+        ;; FIXME: we currently ignore the file metadata and just require the `name`
+        ;; of the object, and its `path`. Therefore the body is going to be an input-stream
+        ;; reading from `path`. To be fixed when we 1. start using schemas, and
+        ;; 2. implement Multipart or Resumable upload.
+        body (cond
+               media-upload `(clojure.java.io/input-stream ~'file-path)
+               request `(~'generate-string ~(->kebab-case-symbol (get request :$ref)))
+               :else "")]
     {:method method
-     :url `(~'str ~'base-url
-            ~@(generate-path path parameters))
-     :content-type :json
-     :body body
      ;; Generate code to build the query params map with only the parameters
      ;; that are not nil (so have been passed in)
-     :query-params `(~'?assoc
-                     ~'{}
-                     ~@(mapcat (fn [p]
-                                 [p (->kebab-case-symbol p)])
-                               query-params))}))
+     :query-params `(~'?assoc ~(if media-upload
+                                 {"uploadType" "media"}
+                                 {})
+                              ~@(mapcat (fn [p] [p (->kebab-case-symbol p)])
+                                        query-params))
+     :url (if media-upload
+            `(~'str ~'root-url
+                    ~@(generate-path (-> media-upload :protocols :simple :path)
+                                     parameters))
+            `(~'str ~'base-url
+                    ~@(generate-path path parameters)))
+     :content-type (if media-upload
+                     `(java.net.URLConnection/guessContentTypeFromStream ~body)
+                     :json)
+     :body body}))
 
 (defn generate-function-from-method
   [{:keys [id scopes] :as method}]

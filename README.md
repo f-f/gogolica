@@ -52,6 +52,12 @@ None yet.
 (gcs/buckets-insert {:name "my-new-bucket-name"} "my-project-name" {})
 
 ;; Upload a new object
+(gcs/objects-insert "/absolute/path/to/file.png" {} "my-new-bucket-name" {:name "my-file-name"})
+
+;; Download the new object - metadata
+(gcs/objects-get "my-new-bucket-name" "my-file-name" {})
+
+;; Download the new object - data
 ;; TODO
 ```
 

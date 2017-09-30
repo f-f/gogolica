@@ -27,6 +27,7 @@
     (:require [gogolica.common :refer [~'?assoc ~'exec-http] :as ~'common]
               [gogolica.auth :refer [~'authenticated?
                                      ~'read-application-credentials] :as ~'auth]
+              [cheshire.core :refer [~'generate-string]]
               [clojure.string :as ~'str])))
 
 (defn generate-global-vars
@@ -111,12 +112,18 @@
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
   [{http-method :httpMethod
     path :path
-    parameters :parameters}]
+    parameters :parameters
+    request :request}]
   (let [query-params (->> parameters
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
         method (-> http-method str/lower-case keyword)
-        body ""] ;; TODO implement body for POSTs
+        ;; If there's a request key in the model, we take the clojure map
+        ;; that should be passed as the object, convert it to json, and
+        ;; attach it to the body
+        body (if request
+               `(~'generate-string ~(->kebab-case-symbol (get request :$ref)))
+               "")]
     {:method method
      :url `(~'str ~'base-url
             ~@(generate-path path parameters))

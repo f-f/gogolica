@@ -22,3 +22,5 @@
       (http/request)
       :body ; TODO: handle exceptions and retry here
       (parse-string true)))
+
+;; TODO: handle 409 exception, when bucket name is already taken

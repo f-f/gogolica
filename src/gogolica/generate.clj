@@ -93,11 +93,10 @@
               (recur (concat result-acc [pre (get args->symbols arg)])
                      post
                      (rest matches)))
-            result-acc))]
-    ;; When path template does not have vars to substitute, shortcircuit
-    (if (seq matches)
-      (template->path-vector' [] path-template matches)
-      (list path-template))))
+            (if template ;; we have no matches anymore, but there might be some string still
+              (concat result-acc [template])
+              result-acc)))]
+    (template->path-vector' [] path-template matches)))
 
 (defn generate-path
   [template-uri parameters]

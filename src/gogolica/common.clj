@@ -16,10 +16,9 @@
 (defn exec-http
   "Given a request map, executes it while taking care of authentication
   and retries"
-  [req-map scope]
-  ;; TODO accept multiple scopes and try requesting multiple of them
+  [req-map scopes]
   (-> req-map
-      (auth/wrap-auth scope)
+      (auth/wrap-auth scopes)
       (http/request)
       :body ; TODO: handle exceptions and retry here
       (parse-string true)))

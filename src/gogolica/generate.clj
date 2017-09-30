@@ -22,6 +22,8 @@
           "Documentation link: " documentation-link)
     (:gen-class)
     (:require [gogolica.common :refer [~'?assoc ~'exec-http] :as ~'common]
+              [gogolica.auth :refer [~'authenticated?
+                                     ~'read-application-credentials] :as ~'auth]
               [clojure.string :as ~'str])))
 
 (defn generate-global-vars
@@ -107,7 +109,7 @@
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
         method (-> http-method str/lower-case keyword)
-        body {}] ;; TODO implement body for POSTs
+        body ""] ;; TODO implement body for POSTs
     {:method method
      :url `(~'str ~'base-url
             ~@(generate-path path parameters))
@@ -116,19 +118,22 @@
      ;; Generate code to build the query params map with only the parameters
      ;; that are not nil (so have been passed in)
      :query-params `(~'?assoc
-                     ~'{"key" *api-key*}
+                     ~'{}
                      ~@(mapcat (fn [p]
                                  [p (->kebab-case-symbol p)])
                                query-params))}))
 
 
 (defn generate-function-from-method
-  [{:keys [id] :as method}]
+  [{:keys [id scopes] :as method}]
   `(~'defn ~(generate-function-name id)
      ~(generate-docs method)
      ~(generate-args method)
      (~'println ~(generate-request method))
-    (~'http/request ~(generate-request method))))
+     (~'when-not ~'authenticated?
+       (~'read-application-credentials))
+     (~'exec-http ~(generate-request method)
+                  ~scopes)))
 
 (defn pprint-symbols
   [symbols]

@@ -17,6 +17,8 @@
   "Given a request map, executes it while taking care of authentication
   and retries"
   [req-map scopes]
+  (when-not auth/authenticated?
+    (auth/read-application-credentials))
   (-> req-map
       (auth/wrap-auth scopes)
       (http/request) ; TODO: handle exceptions and retry here

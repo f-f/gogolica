@@ -174,9 +174,7 @@
   `(~'defn ~(generate-function-name id)
      ~(generate-docs method)
      ~(generate-args method)
-     (~'println ~(generate-request method))
-     (~'when-not ~'authenticated?
-       (~'read-application-credentials))
+     ;(~'println ~(generate-request method))
      (~'exec-http ~(generate-request method)
                   ~scopes)))
 

@@ -32,13 +32,53 @@ None yet.
 
 ## Usage
 
-> TODO
+### `gogolica.storage.v1`
+
+```clojure
+(require '[gogolica.storage.v1 :as gcs])
+
+;; Authentication, if you have the env variable GOOGLE_APPLICATION_DEFAULT set,
+;; then your service account key will be read from the path specified in it.
+;; Otherwise you can load it manually:
+(gogolica.auth/key-from-file "path/to/key.json")
+
+;; List buckets for your project
+(gcs/buckets-list "my-project-name" {})
+
+;; List objects for a buckets
+(gcs/objects-list "my-bucket-name" {})
+
+;; Create new bucket
+(gcs/buckets-insert {:name "my-new-bucket-name"} "my-project-name" {})
+
+;; Upload a new object
+;; TODO
+```
 
 ## Developing
+
+### Getting the JSON models for Google APIs
+
+This will clone the Google auto-generated Go library in the `vendor` directory,
+and copy over their versioned json models to the `model` folder.
+
+```bash
+./script/copy-models
+```
+
+### TODO
 
 > TODO
 
 ## Testing
+
+### Unit tests (test pure functions)
+
+```bash
+lein test
+```
+
+### Integration tests (test hitting APIs)
 
 > TODO
 

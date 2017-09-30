@@ -40,7 +40,7 @@ None yet.
 ;; Authentication, if you have the env variable GOOGLE_APPLICATION_DEFAULT set,
 ;; then your service account key will be read from the path specified in it.
 ;; Otherwise you can load it manually:
-(gogolica.auth/key-from-file "path/to/key.json")
+(gogolica.core.auth/key-from-file "path/to/key.json")
 
 ;; List buckets for your project
 (gcs/buckets-list "my-project-name" {})

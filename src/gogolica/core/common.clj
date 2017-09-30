@@ -1,6 +1,6 @@
-(ns gogolica.common
+(ns gogolica.core.common
   (:gen-class)
-  (:require [gogolica.auth :as auth]
+  (:require [gogolica.core.auth :as auth]
             [cheshire.core :refer [parse-string generate-string]]
             [clj-http.client :as http]))
 

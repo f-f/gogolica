@@ -1,4 +1,4 @@
-(ns gogolica.generate
+(ns gogolica.gen.generate
   "A namespace for functions that do most of the actual codegen of gogolica."
   (:gen-class)
   (:require [cheshire.core :as json]
@@ -6,9 +6,8 @@
             [clojure.set :as set]
             [me.raynes.fs :as fs]
             [clj-http.client :as http]
-            [gogolica.auth :as auth]
-            [gogolica.common :as common]
-            [gogolica.model :as model]
+            [gogolica.core.auth :as auth]
+            [gogolica.core.common :as common]
             [fipp.clojure :as f]
             [cheshire.core :refer [generate-string parse-string]]
             [camel-snake-kebab.core :refer :all]))
@@ -24,9 +23,11 @@
     ~(str description "\n\n"
           "Documentation link: " documentation-link)
     (:gen-class)
-    (:require [gogolica.common :refer [~'?assoc ~'exec-http] :as ~'common]
-              [gogolica.auth :refer [~'authenticated?
-                                     ~'read-application-credentials] :as ~'auth]
+    (:require [gogolica.core.common :refer [~'?assoc ~'exec-http] :as ~'common]
+              [gogolica.core.auth
+               :refer [~'authenticated?
+                       ~'read-application-credentials]
+               :as ~'auth]
               [cheshire.core :refer [~'generate-string]]
               [clojure.string :as ~'str])))
 

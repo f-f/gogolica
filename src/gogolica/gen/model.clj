@@ -1,4 +1,4 @@
-(ns gogolica.model
+(ns gogolica.gen.model
   "Loading and processing of the API discovery models."
   (:gen-class)
   (:require [cheshire.core :as json]

@@ -19,8 +19,7 @@
   [req-map scopes]
   (-> req-map
       (auth/wrap-auth scopes)
-      (http/request)
-      :body ; TODO: handle exceptions and retry here
-      (parse-string true)))
+      (http/request) ; TODO: handle exceptions and retry here
+      (:body)))
 
 ;; TODO: handle 409 exception, when bucket name is already taken

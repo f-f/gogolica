@@ -64,8 +64,11 @@
   [{parameters :parameters
     parameter-order :parameterOrder
     request :request
-    media-upload :mediaUpload}]
+    media-upload :mediaUpload
+    media-download :supportsMediaDownload}]
   (let [[required optional] (->> parameters
+                                 (merge (when media-download
+                                          {:alt {:position "query"}}))
                                  split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
         ;; parameter-order also contains the required params, so we get them from there
@@ -112,6 +115,7 @@
                               keys
                               (mapv name))))
 
+;; TODO: refactor this crap
 (defn generate-request
   "Generates the request map to be passed to the http library.
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
@@ -119,8 +123,11 @@
     path :path
     parameters :parameters
     request :request
-    media-upload :mediaUpload}]
+    media-upload :mediaUpload
+    media-download :supportsMediaDownload}]
   (let [query-params (->> parameters
+                          (merge (when media-download
+                                   {:alt {:location "query"}}))
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
         method (-> http-method str/lower-case keyword)
@@ -154,6 +161,12 @@
      :content-type (if media-upload
                      `(java.net.URLConnection/guessContentTypeFromStream ~body)
                      :json)
+     ;; Auto coercion of return types nicely provided by clj-http
+     :as (if media-download
+           `(~'if (~'= ~'alt "media")
+             :byte-array
+             :json)
+           :json)
      :body body}))
 
 (defn generate-function-from-method

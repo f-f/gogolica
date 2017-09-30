@@ -57,8 +57,8 @@ None yet.
 ;; Download the new object - metadata
 (gcs/objects-get "my-new-bucket-name" "my-file-name" {})
 
-;; Download the new object - data
-;; TODO
+;; Download the new object - data as bytearray
+(gcs/objects-get "my-new-bucket-name" "my-file-name" {:alt "media"})
 ```
 
 ## Developing

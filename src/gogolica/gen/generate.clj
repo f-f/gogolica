@@ -183,11 +183,9 @@
   [model]
   (let [ns-declaration (generate-ns-declaration model)
         global-vars (generate-global-vars model)
-        functions (->> (:resources model)
-                       (mapcat
-                        (fn [[resource-id resource]]
-                          (for [[method-id method] (:methods resource)]
-                            (generate-function-from-method method)))))]
+        functions (->> model
+                       model/all-methods
+                       (map generate-function-from-method))]
     (->> (concat
           [ns-declaration]
           global-vars

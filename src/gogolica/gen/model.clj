@@ -24,7 +24,7 @@
        first))
 
 (defn select-resource-methods
-  "Restricts the API model to a specified subset of resources and methods.
+  "Restricts API model to a specified subset of resources and methods.
    Takes a map where the keys are the resources and values are
    the lists of methods, and selects only those resources with
    those methods."
@@ -43,6 +43,15 @@
                           (update :methods
                                   #(select-keys % wanted-methods)))])))
                 (into {})))))))
+
+(defn all-methods
+  "Given API model walks it and returns a list of methods."
+  [model]
+  (->> model
+       :resources
+       vals
+       (map :methods)
+       (mapcat vals)))
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params,

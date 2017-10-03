@@ -11,9 +11,9 @@
 (def model
   {:resources
    {:foo {:methods
-          {:get :TODO
-           :put :TODO
-           :delete :TODO}}
+          {:get :COME_HERE
+           :put :TAKE_THAT
+           :delete :GO_AWAY}}
     :bar {:methods
           {:drink :TODO
            :cheer :TODO}}
@@ -40,3 +40,7 @@
            {:kitchen {:methods {:brew_tea :TODO}}
             :bar     {:methods {:drink :TODO}}}))))
 
+(deftest all-methods
+  (testing "Gets all the methods out of a model"
+    (is (= (->> model model/all-methods (into #{}))
+           #{:COME_HERE :TAKE_THAT :GO_AWAY :TODO}))))

@@ -24,7 +24,8 @@
        first))
 
 (defn select-resource-methods
-  "Takes a map where the keys are the resources and values are
+  "Restricts the API model to a specified subset of resources and methods.
+   Takes a map where the keys are the resources and values are
    the lists of methods, and selects only those resources with
    those methods."
   [model resource-methods]

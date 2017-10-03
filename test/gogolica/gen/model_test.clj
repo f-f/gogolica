@@ -17,9 +17,11 @@
     :bar {:methods
           {:drink :TODO
            :cheer :TODO}}
-    :kitchen {:methods
-              {:make_coffee :TODO
-               :brew_tea :TODO}}}})
+    :kitchen {:resources
+              {:drinks
+               {:methods
+                {:make_coffee :COFFEE
+                 :brew_tea :TEA}}}}}})
 
 (deftest split-required-params
   (testing "Splitting of method parameters between required and not."
@@ -32,15 +34,15 @@
 
 (deftest select-resource-methods
   (testing "Restricting to only certain resources/methods"
-    (is (= (-> model
-               (model/select-resource-methods
-                {:kitchen [:brew_tea]
-                 :bar     [:drink]})
-               :resources)
-           {:kitchen {:methods {:brew_tea :TODO}}
-            :bar     {:methods {:drink :TODO}}}))))
+    (is (= (model/select-resource-methods
+            model
+            {:kitchen {:drinks [:brew_tea]}
+             :bar     [:drink]})
+           {:resources
+            {:kitchen {:resources {:drinks {:methods {:brew_tea :TEA}}}}
+             :bar     {:methods   {:drink :TODO}}}}))))
 
 (deftest all-methods
   (testing "Gets all the methods out of a model"
     (is (= (->> model model/all-methods (into #{}))
-           #{:COME_HERE :TAKE_THAT :GO_AWAY :TODO}))))
+           #{:COME_HERE :TAKE_THAT :GO_AWAY :COFFEE :TEA :TODO}))))

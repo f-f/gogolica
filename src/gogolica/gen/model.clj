@@ -39,9 +39,15 @@
                  (fn [[resource-id resource]]
                    (let [wanted-methods (resource-methods resource-id)]
                      [resource-id
-                      (-> resource
-                          (update :methods
-                                  #(select-keys % wanted-methods)))])))
+                      (merge
+                       resource
+                       (when-let [methods (:methods resource)]
+                         {:methods (select-keys methods wanted-methods)})
+                       (when (map? wanted-methods)
+                         (when-let [resources (:resources resource)]
+                            (select-resource-methods
+                             {:resources resources}
+                             wanted-methods))))])))
                 (into {})))))))
 
 (defn all-methods
@@ -50,8 +56,10 @@
   (->> model
        :resources
        vals
-       (map :methods)
-       (mapcat vals)))
+       (mapcat
+        #(cond
+           (some? (:methods %))   (-> % :methods vals)
+           (some? (:resources %)) (-> % all-methods)))))
 
 (defn split-required-params
   "Returns a vector of two maps: first with the required params,

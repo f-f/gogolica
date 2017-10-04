@@ -76,37 +76,6 @@
     `[~@required ~(hash-map :keys optional :as 'optional-params)]))
 
 
-(defn template->path-vector
-  [path-template arg-names]
-  (let [args->symbols (->> arg-names
-                           (mapv #(hash-map % (->kebab-case-symbol %)))
-                           (apply merge))
-        ;; Returns a list of vectors, where the first element is the match including
-        ;; the curly brackets, and the second element is without.
-        matches (re-seq #"\{(.+?)\}" path-template)
-        ;; Helper function in which we iterate on the template string,
-        ;; matching on the first pair of curly braces and adding the
-        ;; match to the accumulator vector, recurring on more matches
-        template->path-vector'
-        (fn [result-acc template matches]
-          (if-some [[match arg] (first matches)]
-            (let [[pre post] (str/split template (re-pattern (str "\\{" arg "\\}")))]
-              (recur (concat result-acc [pre (get args->symbols arg)])
-                     post
-                     (rest matches)))
-            (if template ;; we have no matches anymore, but there might be some string still
-              (concat result-acc [template])
-              result-acc)))]
-    (template->path-vector' [] path-template matches)))
-
-(defn generate-path
-  [template-uri parameters]
-  (template->path-vector template-uri
-                         (->> parameters
-                              (filter (fn [[k v]](= "path" (:location v))))
-                              keys
-                              (mapv name))))
-
 ;; TODO: refactor this crap
 (defn generate-request
   "Generates the request map to be passed to the http library.
@@ -115,13 +84,13 @@
     path :path
     parameters :parameters
     request :request
-    :as model}]
+    :as method}]
   (let [query-params (->> parameters
-                          (merge (when (model/media-download? model)
+                          (merge (when (model/media-download? method)
                                    {:alt {:location "query"}}))
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
-        method (-> http-method str/lower-case keyword)
+        http-method (-> http-method str/lower-case keyword)
         ;; If there's a :request key in the model, we take the clojure map
         ;; that should be passed as the object, convert it to json, and
         ;; attach it to the body.
@@ -132,28 +101,27 @@
         ;; reading from `path`. To be fixed when we 1. start using schemas, and
         ;; 2. implement Multipart or Resumable upload.
         body (cond
-               (model/media-upload? model) `(clojure.java.io/input-stream ~'file-path)
+               (model/media-upload? method) `(clojure.java.io/input-stream ~'file-path)
                request `(~'generate-string ~(->kebab-case-symbol (get request :$ref)))
                :else "")]
-    {:method method
+    {:method http-method
      ;; Generate code to build the query params map with only the parameters
      ;; that are not nil (so have been passed in)
-     :query-params `(~'?assoc ~(if (model/media-upload? model)
+     :query-params `(~'?assoc ~(if (model/media-upload? method)
                                  {"uploadType" "media"}
                                  {})
                               ~@(mapcat (fn [p] [p (->kebab-case-symbol p)])
                                         query-params))
-     :url (if (model/media-upload? model)
+     :url (if (model/media-upload? method)
             `(~'str ~'root-url
-                    ~@(generate-path (-> model model/media-upload :protocols :simple :path)
-                                     parameters))
+                    ~@(model/method-simple-upload-path method))
             `(~'str ~'base-url
-                    ~@(generate-path path parameters)))
-     :content-type (if (model/media-upload? model)
+                    ~@(model/method-path method)))
+     :content-type (if (model/media-upload? method)
                      `(java.net.URLConnection/guessContentTypeFromStream ~body)
                      :json)
      ;; Auto coercion of return types nicely provided by clj-http
-     :as (if (model/media-download? model)
+     :as (if (model/media-download? method)
            `(~'if (~'= ~'alt "media")
              :byte-array
              :json)

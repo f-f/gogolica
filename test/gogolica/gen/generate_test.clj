@@ -24,20 +24,4 @@
                              :request {:$ref "Bucket"}})
            '[bucket bar foo-bar {:as optional-params :keys [baz]}]))))
 
-(deftest template->path-vector
-  (testing "Uri template to path vector conversion."
-    (is (= (g/template->path-vector "b/{fooBar}/c/{bar}" ["fooBar" "bar"])
-           '("b/" foo-bar "/c/" bar))))
-  (testing "Uri template conversion with no vars."
-    (is (= (g/template->path-vector "b" [])
-           '("b"))))
-  (testing "Uri template conversion with no vars at the end"
-    (is (= (g/template->path-vector "b/{fooBar}/o" ["fooBar"])
-           '("b/" foo-bar "/o")))))
-
-(deftest generate-path
-  (testing "Uri template to path vector conversion, with raw parameters."
-    (is (= (g/generate-path "b/{fooBar}/c/{bar}" parameters)
-           '("b/" foo-bar "/c/" bar)))))
-
 ;; TODO: generate-args

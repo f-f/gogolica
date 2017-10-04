@@ -46,3 +46,14 @@
   (testing "Gets all the methods out of a model"
     (is (= (->> model model/all-methods (into #{}))
            #{:COME_HERE :TAKE_THAT :GO_AWAY :COFFEE :TEA :TODO}))))
+
+(deftest template->path-vector
+  (testing "Uri template to path vector conversion."
+    (is (= (model/template->path-vector"b/{fooBar}/c/{bar}" ["fooBar" "bar"])
+           '("b/" foo-bar "/c/" bar))))
+  (testing "Uri template conversion with no vars."
+    (is (= (model/template->path-vector "b" [])
+           '("b"))))
+  (testing "Uri template conversion with no vars at the end"
+    (is (= (model/template->path-vector "b/{fooBar}/o" ["fooBar"])
+           '("b/" foo-bar "/o")))))

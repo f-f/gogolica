@@ -1,7 +1,8 @@
 (ns gogolica.gen.model
   "Loading and processing of the API discovery models."
   (:gen-class)
-  (:require [cheshire.core :as json]
+  (:require [clojure.string :as str]
+            [cheshire.core :as json]
             [me.raynes.fs :as fs]
             [camel-snake-kebab.core :refer :all]))
 
@@ -89,6 +90,59 @@
 (defn media-download-service?
   [method]
   (-> method :useMediaDownloadService boolean))
+
+
+(defn template->path-vector
+  [path-template arg-names]
+  (let [args->symbols (->> arg-names
+                           (mapv #(hash-map % (->kebab-case-symbol %)))
+                           (apply merge))
+        ;; Returns a list of vectors, where the first element is the match including
+        ;; the curly brackets, and the second element is without.
+        matches (re-seq #"\{(.+?)\}" path-template)
+        ;; Helper function in which we iterate on the template string,
+        ;; matching on the first pair of curly braces and adding the
+        ;; match to the accumulator vector, recurring on more matches
+        template->path-vector'
+        (fn [result-acc template matches]
+          (if-some [[match arg] (first matches)]
+            (let [[pre post] (str/split template (re-pattern (str "\\{" arg "\\}")))]
+              (recur (concat result-acc [pre (get args->symbols arg)])
+                     post
+                     (rest matches)))
+            (if template ;; we have no matches anymore, but there might be some string still
+              (concat result-acc [template])
+              result-acc)))]
+    (template->path-vector' [] path-template matches)))
+
+(defn method-parameters
+  [method]
+  (-> method :parameters))
+
+(defn method-path-parameters
+  [method]
+  (->> method method-parameters
+       (filter #(-> % val :location (= "path")))))
+
+(defn method-path
+  "The path template of a given method.
+   Represented as a vector of strings and symbols."
+  [method]
+  (-> method :path
+      (template->path-vector
+       (->> method
+            method-path-parameters
+            keys
+            (mapv name)))))
+
+(defn method-simple-upload-path
+  [method]
+  (some-> method media-upload :protocols :simple :path
+          (template->path-vector
+           (->> method
+                method-path-parameters
+                keys
+                (mapv name)))))
 
 (def storage-model (model-for :storage :v1))
 

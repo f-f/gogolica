@@ -54,13 +54,10 @@
   to generate the arguments vector.
   If the request is not nil, then the method also takes a request object,
   that gets specified as the first parameter."
-  [{parameters :parameters
-    parameter-order :parameterOrder
+  [{parameter-order :parameterOrder
     request :request
-    :as model}]
-  (let [[required optional] (->> parameters
-                                 (merge (when (model/media-download? model)
-                                          {:alt {:position "query"}}))
+    :as method}]
+  (let [[required optional] (->> method model/method-parameters
                                  model/split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
         ;; parameter-order also contains the required params, so we get them from there
@@ -70,7 +67,7 @@
         required (if request-sym
                    (cons request-sym required)
                    required)
-        required (if (model/media-upload? model)
+        required (if (model/media-upload? method)
                    (cons 'file-path required)
                    required)]
     `[~@required ~(hash-map :keys optional :as 'optional-params)]))
@@ -82,14 +79,10 @@
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
   [{http-method :httpMethod
     path :path
-    parameters :parameters
     request :request
     :as method}]
-  (let [query-params (->> parameters
-                          (merge (when (model/media-download? method)
-                                   {:alt {:location "query"}}))
-                          (filter (fn [[_ v]] (= (:location v) "query")))
-                          (mapv   (fn [[k _]] (name k))))
+  (let [query-params (->> method model/method-query-parameters
+                          (mapv  (comp name key)))
         http-method (-> http-method str/lower-case keyword)
         ;; If there's a :request key in the model, we take the clojure map
         ;; that should be passed as the object, convert it to json, and

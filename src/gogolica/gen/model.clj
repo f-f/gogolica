@@ -117,12 +117,20 @@
 
 (defn method-parameters
   [method]
-  (-> method :parameters))
+  (merge
+   (-> method :parameters)
+   (when (media-download? method)
+     {:alt {:position "query"}})))
 
 (defn method-path-parameters
   [method]
   (->> method method-parameters
        (filter #(-> % val :location (= "path")))))
+
+(defn method-query-parameters
+  [method]
+  (->> method method-parameters
+       (filter #(-> % val :location (= "query")))))
 
 (defn method-path
   "The path template of a given method.

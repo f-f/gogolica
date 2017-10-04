@@ -14,6 +14,8 @@ title="Nikolai Vasilievich Gogol" align="right" padding="5px" height="250px">
 
 <br clear=all /><br />
 
+[![CircleCI](https://circleci.com/gh/f-f/gogolica.svg?style=svg)](https://circleci.com/gh/f-f/gogolica)
+
 ***Warning: ALPHA STATUS***
 
 Gogolica is an auto-generated Clojure bindings library for Google APIs.

@@ -57,10 +57,9 @@
   [{parameters :parameters
     parameter-order :parameterOrder
     request :request
-    media-upload :mediaUpload
-    media-download :supportsMediaDownload}]
+    :as model}]
   (let [[required optional] (->> parameters
-                                 (merge (when media-download
+                                 (merge (when (model/media-download? model)
                                           {:alt {:position "query"}}))
                                  model/split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
@@ -71,7 +70,7 @@
         required (if request-sym
                    (cons request-sym required)
                    required)
-        required (if media-upload
+        required (if (model/media-upload? model)
                    (cons 'file-path required)
                    required)]
     `[~@required ~(hash-map :keys optional :as 'optional-params)]))
@@ -116,10 +115,9 @@
     path :path
     parameters :parameters
     request :request
-    media-upload :mediaUpload
-    media-download :supportsMediaDownload}]
+    :as model}]
   (let [query-params (->> parameters
-                          (merge (when media-download
+                          (merge (when (model/media-download? model)
                                    {:alt {:location "query"}}))
                           (filter (fn [[_ v]] (= (:location v) "query")))
                           (mapv   (fn [[k _]] (name k))))
@@ -134,28 +132,28 @@
         ;; reading from `path`. To be fixed when we 1. start using schemas, and
         ;; 2. implement Multipart or Resumable upload.
         body (cond
-               media-upload `(clojure.java.io/input-stream ~'file-path)
+               (model/media-upload? model) `(clojure.java.io/input-stream ~'file-path)
                request `(~'generate-string ~(->kebab-case-symbol (get request :$ref)))
                :else "")]
     {:method method
      ;; Generate code to build the query params map with only the parameters
      ;; that are not nil (so have been passed in)
-     :query-params `(~'?assoc ~(if media-upload
+     :query-params `(~'?assoc ~(if (model/media-upload? model)
                                  {"uploadType" "media"}
                                  {})
                               ~@(mapcat (fn [p] [p (->kebab-case-symbol p)])
                                         query-params))
-     :url (if media-upload
+     :url (if (model/media-upload? model)
             `(~'str ~'root-url
-                    ~@(generate-path (-> media-upload :protocols :simple :path)
+                    ~@(generate-path (-> model model/media-upload :protocols :simple :path)
                                      parameters))
             `(~'str ~'base-url
                     ~@(generate-path path parameters)))
-     :content-type (if media-upload
+     :content-type (if (model/media-upload? model)
                      `(java.net.URLConnection/guessContentTypeFromStream ~body)
                      :json)
      ;; Auto coercion of return types nicely provided by clj-http
-     :as (if media-download
+     :as (if (model/media-download? model)
            `(~'if (~'= ~'alt "media")
              :byte-array
              :json)

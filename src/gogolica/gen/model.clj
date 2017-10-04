@@ -69,6 +69,27 @@
        ((juxt filter remove) (fn [[k v]] (:required v)))
        (mapv #(into {} %))))
 
+(defn media-upload?
+  "Checks whether the given method supports uploading media."
+  [method]
+  (and (-> method :supportsMediaUpload)
+       (-> method :mediaUpload)))
+
+(defn media-upload
+  "Get the details on what protocols are supported and what kind of media
+   can be uploaded for given method."
+  [method]
+  (-> method :mediaUpload))
+
+(defn media-download?
+  "Checks whether a given method provides downloadable media."
+  [method]
+  (-> method :supportsMediaDownload boolean))
+
+(defn media-download-service?
+  [method]
+  (-> method :useMediaDownloadService boolean))
+
 (def storage-model (model-for :storage :v1))
 
 (def storage-object-get (-> storage-model :resources :objects :methods :get))

@@ -152,6 +152,11 @@
                 keys
                 (mapv name)))))
 
+(defn method-http-method
+  "Returns the http method of a given method as a ring-compatible keyword."
+  [method]
+  (-> method :httpMethod str/lower-case keyword))
+
 (def storage-model (model-for :storage :v1))
 
 (def storage-object-get (-> storage-model :resources :objects :methods :get))

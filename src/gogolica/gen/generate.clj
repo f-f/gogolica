@@ -77,13 +77,10 @@
 (defn generate-request
   "Generates the request map to be passed to the http library.
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
-  [{http-method :httpMethod
-    path :path
-    request :request
-    :as method}]
+  [{request :request :as method}]
   (let [query-params (->> method model/method-query-parameters
                           (mapv  (comp name key)))
-        http-method (-> http-method str/lower-case keyword)
+        http-method (model/method-http-method method)
         ;; If there's a :request key in the model, we take the clojure map
         ;; that should be passed as the object, convert it to json, and
         ;; attach it to the body.

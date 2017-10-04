@@ -57,3 +57,8 @@
   (testing "Uri template conversion with no vars at the end"
     (is (= (model/template->path-vector "b/{fooBar}/o" ["fooBar"])
            '("b/" foo-bar "/o")))))
+
+(deftest method-ident
+  (testing "Generation of function names"
+    (is (= (model/method-ident {:id "storage.objects.get"})
+           'objects-get))))

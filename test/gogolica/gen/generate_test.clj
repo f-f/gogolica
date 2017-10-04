@@ -8,11 +8,6 @@
                        :location "path"}
                  :baz {:location "query"}})
 
-(deftest generate-function-name
-  (testing "Generation of function names"
-    (is (= (g/generate-function-name "storage.objects.get")
-           'objects-get))))
-
 (deftest generate-args
   (testing "Generation of function arguments."
     (is (= (g/generate-args {:parameters parameters

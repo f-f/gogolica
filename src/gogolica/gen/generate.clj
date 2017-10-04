@@ -38,13 +38,6 @@
   `[(def ~'root-url ~root-url)
     (def ~'base-url ~(str root-url service-path))])
 
-(defn generate-function-name
-  "Generates a symbol in the form of 'verb-resource', from a method id."
-  [id]
-  (let [[_ resource-name method-name] (str/split id #"\.")]
-    (-> (str resource-name "-" method-name)
-        ->kebab-case-symbol)))
-
 (defn generate-docs [method]
   (str (:description method)
        "\n")) ;; TODO: add description for parameters
@@ -119,8 +112,8 @@
      :body body}))
 
 (defn generate-function-from-method
-  [{:keys [id scopes] :as method}]
-  `(~'defn ~(generate-function-name id)
+  [{:keys [scopes] :as method}]
+  `(~'defn ~(model/method-ident method)
      ~(generate-docs method)
      ~(generate-args method)
      ;(~'println ~(generate-request method))

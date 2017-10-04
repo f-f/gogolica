@@ -157,6 +157,14 @@
   [method]
   (-> method :httpMethod str/lower-case keyword))
 
+(defn method-ident
+  "Returns an identifier for a given method.
+   Identifier is a symbol and has a form of 'resource-method'"
+  [method]
+  (let [[service-name resource-name method-name] (str/split (:id method) #"\.")]
+    (->kebab-case-symbol
+     (str resource-name "-" method-name))))
+
 (def storage-model (model-for :storage :v1))
 
 (def storage-object-get (-> storage-model :resources :objects :methods :get))

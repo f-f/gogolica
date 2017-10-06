@@ -9,7 +9,8 @@
             [fipp.clojure :as f]
             [cheshire.core :refer [generate-string parse-string]]
             [camel-snake-kebab.core :refer :all]
-            [gogolica.gen.model :as model]))
+            [gogolica.gen.model :as model]
+            [gogolica.gen.model.method :as method]))
 
 (defn generate-ns-declaration
   "Generates the ns declaration for the given API model."
@@ -49,7 +50,7 @@
   [{parameter-order :parameterOrder
     request :request
     :as method}]
-  (let [[required optional] (->> method model/method-parameters
+  (let [[required optional] (->> method method/parameters
                                  model/split-required-params
                                  (mapv (comp (partial mapv ->kebab-case-symbol) keys)))
         ;; parameter-order also contains the required params, so we get them from there
@@ -59,7 +60,7 @@
         required (if request-sym
                    (cons request-sym required)
                    required)
-        required (if (model/media-upload? method)
+        required (if (method/media-upload? method)
                    (cons 'file-path required)
                    required)]
     `[~@required ~(hash-map :keys optional :as 'optional-params)]))
@@ -69,11 +70,8 @@
 (defn generate-request
   "Generates the request map to be passed to the http library.
   NB: uses the `base-url` symbol, it should be generated in the ns including the method."
-  [{request :request :as method}]
-  (let [query-params (->> method model/method-query-parameters
-                          (mapv  (comp name key)))
-        http-method (model/method-http-method method)
-        ;; If there's a :request key in the model, we take the clojure map
+  [method]
+  (let [;; If there's a :request key in the model, we take the clojure map
         ;; that should be passed as the object, convert it to json, and
         ;; attach it to the body.
         ;; But if there's a mediaUpload key then we should upload a file, so the
@@ -83,27 +81,31 @@
         ;; reading from `path`. To be fixed when we 1. start using schemas, and
         ;; 2. implement Multipart or Resumable upload.
         body (cond
-               (model/media-upload? method) `(clojure.java.io/input-stream ~'file-path)
-               request `(~'generate-string ~(->kebab-case-symbol (get request :$ref)))
+               (method/media-upload? method) `(clojure.java.io/input-stream ~'file-path)
+               (:request method) `(~'generate-string ~(method/body-ident method))
                :else "")]
-    {:method http-method
+    {:method (method/http-method method)
      ;; Generate code to build the query params map with only the parameters
      ;; that are not nil (so have been passed in)
-     :query-params `(~'?assoc ~(if (model/media-upload? method)
-                                 {"uploadType" "media"}
-                                 {})
-                              ~@(mapcat (fn [p] [p (->kebab-case-symbol p)])
-                                        query-params))
-     :url (if (model/media-upload? method)
+     :query-params `(~'?assoc
+                     ~(if (method/media-upload? method)
+                        {:uploadType "media"}
+                        {})
+                     ~@(->> method method/query-parameters
+                            (mapcat
+                             (fn [[param-name _]]
+                               [param-name
+                                (->kebab-case-symbol param-name)]))))
+     :url (if (method/media-upload? method)
             `(~'str ~'root-url
-                    ~@(model/method-simple-upload-path method))
+                    ~@(method/simple-upload-path method))
             `(~'str ~'base-url
-                    ~@(model/method-path method)))
-     :content-type (if (model/media-upload? method)
+                    ~@(method/path method)))
+     :content-type (if (method/media-upload? method)
                      `(java.net.URLConnection/guessContentTypeFromStream ~body)
                      :json)
      ;; Auto coercion of return types nicely provided by clj-http
-     :as (if (model/media-download? method)
+     :as (if (method/media-download? method)
            `(~'if (~'= ~'alt "media")
              :byte-array
              :json)
@@ -112,7 +114,7 @@
 
 (defn generate-function-from-method
   [{:keys [scopes] :as method}]
-  `(~'defn ~(model/method-ident method)
+  `(~'defn ~(method/ident method)
      ~(generate-docs method)
      ~(generate-args method)
      ;(~'println ~(generate-request method))

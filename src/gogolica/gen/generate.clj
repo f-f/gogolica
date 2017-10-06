@@ -33,10 +33,9 @@
 (defn generate-global-vars
   "Generates global variables that are used throughout the generated
    namespace for the given API model"
-  [{root-url :rootUrl
-    service-path :servicePath}]
-  `[(def ~'root-url ~root-url)
-    (def ~'base-url ~(str root-url service-path))])
+  [model]
+  `[(def ~'root-url ~(model/root-url model))
+    (def ~'base-url ~(model/base-url model))])
 
 (defn generate-docs [method]
   (str (:description method)

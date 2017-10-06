@@ -70,6 +70,13 @@
        ((juxt filter remove) (fn [[k v]] (:required v)))
        (mapv #(into {} %))))
 
+(defn root-url     [model] (-> model :rootUrl))
+(defn service-path [model] (-> model :servicePath))
+
+(defn base-url
+  [model]
+  (str (root-url model) (service-path model)))
+
 (defn media-upload?
   "Checks whether the given method supports uploading media."
   [method]

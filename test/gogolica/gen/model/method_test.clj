@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [gogolica.gen.model.method :as method]))
 
-(deftest ident
+(deftest function-name
   (testing "Generation of function names"
-    (is (= (method/ident {:id "storage.objects.get"})
+    (is (= (method/function-name {:id "storage.objects.get"})
            'objects-get))))

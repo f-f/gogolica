@@ -114,7 +114,7 @@
 
 (defn generate-function-from-method
   [{:keys [scopes] :as method}]
-  `(~'defn ~(method/ident method)
+  `(~'defn ~(method/function-name method)
      ~(generate-docs method)
      ~(generate-args method)
      ;(~'println ~(generate-request method))

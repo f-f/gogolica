@@ -70,9 +70,9 @@
   [method]
   (-> method :httpMethod str/lower-case keyword))
 
-(defn ident
+(defn function-name
   "Returns an identifier for a given method.
-   Identifier is a symbol and has a form of 'resource-method'"
+   Identifier is a symbol and has a form of 'resource-method'."
   [method]
   (let [[service-name resource-name name] (str/split (:id method) #"\.")]
     (->kebab-case-symbol

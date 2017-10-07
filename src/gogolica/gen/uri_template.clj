@@ -8,7 +8,8 @@
 (defn parse
   [path-template arg-names]
   (let [args->symbols (->> arg-names
-                           (mapv #(hash-map % (->kebab-case-symbol %)))
+                           (map name)
+                           (map #(hash-map % (->kebab-case-symbol %)))
                            (apply merge))
         ;; Returns a list of vectors, where the first element is the match including
         ;; the curly brackets, and the second element is without.

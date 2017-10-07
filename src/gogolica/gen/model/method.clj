@@ -53,8 +53,7 @@
       (uri-template/parse
        (->> method
             path-parameters
-            keys
-            (mapv name)))))
+            keys))))
 
 (defn simple-upload-path
   [method]
@@ -62,8 +61,7 @@
           (uri-template/parse
            (->> method
                 path-parameters
-                keys
-                (mapv name)))))
+                keys))))
 
 (defn http-method
   "Returns the http method of a given method as a ring-compatible keyword."

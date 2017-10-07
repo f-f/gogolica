@@ -49,19 +49,16 @@
   "The path template of a given method.
    Represented as a vector of strings and symbols."
   [method]
-  (-> method :path
-      (uri-template/parse
-       (->> method
-            path-parameters
-            keys))))
+  (uri-template/parse
+   (-> method :path)
+   (-> method path-parameters keys)))
 
 (defn simple-upload-path
+  "The path template for simple upload url of given method."
   [method]
-  (some-> method media-upload :protocols :simple :path
-          (uri-template/parse
-           (->> method
-                path-parameters
-                keys))))
+  (uri-template/parse
+   (some-> method media-upload :protocols :simple :path)
+   (-> method path-parameters keys)))
 
 (defn http-method
   "Returns the http method of a given method as a ring-compatible keyword."

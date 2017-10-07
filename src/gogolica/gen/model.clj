@@ -28,7 +28,7 @@
   "Restricts API model to a specified subset of resources and methods.
    Takes a map where the keys are the resources and values are
    the lists of methods, and selects only those resources with
-   those methods."
+   those methods. Takes care of the nested resources too."
   [model resource-methods]
   (-> model
       (update
@@ -52,7 +52,8 @@
                 (into {})))))))
 
 (defn all-methods
-  "Given API model walks it and returns a list of methods."
+  "Given API model recursively walks it and returns a list of methods.
+   Recources can have nested resources. This takes care of it."
   [model]
   (->> model
        :resources

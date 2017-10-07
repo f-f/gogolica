@@ -13,6 +13,6 @@
                  [buddy/buddy-core "1.4.0"]
                  [clj-time "0.14.0"]
                  [camel-snake-kebab "0.4.0"]]
-  :main ^:skip-aot gogolica.core
+  :main ^:skip-aot gogolica.gen
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
